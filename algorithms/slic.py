@@ -20,8 +20,9 @@ def get_image_as_float(filename):
 # returns a 2d list of pixels of the image containing their segment labels from SLIC
 # for optional arguments refer to https://scikit-image.org/docs/dev/api/skimage.segmentation.html?highlight=slic
 def get_pixel_segments(image, number_of_segments, compactness=10.0, max_iter=10, sigma=5):
-    pixels = slic(image, n_segments=number_of_segments, compactness=compactness, max_iter=max_iter, sigma=sigma)
-    return pixels
+    pixel_segments = slic(image, n_segments=number_of_segments, compactness=compactness, max_iter=max_iter, sigma=sigma)
+    print(type(pixel_segments))
+    return pixel_segments
 
 
 # accepts 2d list of pixels containing their segment labels
@@ -36,6 +37,12 @@ def get_segment_pixels(pixel_segments):
     return segments_pixels
 
 
+# accepts 2d list of pixels containing their segment labels and a list of labels,
+# return a 2d mask where pixels are 1 if they are in the labels list or 0 if not
+def get_mask(pixel_segments, labels):
+    return numpy.where(numpy.isin(pixel_segments, labels), 255, 0).astype('uint8')
+
+
 def show_plot(image, pixel_segments):
     fig = matplotlib.pyplot.figure("Superpixels")
     ax = fig.add_subplot(1, 1, 1)
@@ -46,15 +53,19 @@ def show_plot(image, pixel_segments):
 
 def main():
     # construct the argument parser and parse the arguments
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--image", required=True, help="Path to the image")
-    ap.add_argument("-s", "--segments", type=int, default=300, help="Number of segments")
-    ap.add_argument("--save", type=bool, default=False, help="Save the image?")
-    args = vars(ap.parse_args())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--image", required=True, help="Path to the image")
+    parser.add_argument("-s", "--segments", type=int, default=300, help="Number of segments")
+    parser.add_argument("--save", type=bool, default=False, help="Save the image?")
+    parser.add_argument("--labels", nargs='+', type=int, default=0, help="Segment labels for mask")
+    args = vars(parser.parse_args())
 
     image = get_image_as_float(args["image"])
-
     segments = get_pixel_segments(image, args["segments"])
+
+    if args["labels"]:
+        mask = get_mask(segments, args["labels"])
+        io.imsave('mask.png', mask)
 
     if args["save"]:
         io.imsave('super-pixels.png', mark_boundaries(image, segments))

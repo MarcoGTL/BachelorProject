@@ -2,7 +2,7 @@ from skimage.segmentation import slic
 from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 from skimage import io
-import matplotlib.pyplot as plt
+import matplotlib.pyplot
 import argparse
 import numpy
 
@@ -19,7 +19,7 @@ def get_image_as_float(filename):
 # accepts float representation of image and number of (approximate) segments
 # returns a 2d list of pixels of the image containing their segment labels from SLIC
 # for optional arguments refer to https://scikit-image.org/docs/dev/api/skimage.segmentation.html?highlight=slic
-def get_pixel_segments(image, number_of_segments, compactness=10.0, max_iter=10, sigma=0):
+def get_pixel_segments(image, number_of_segments, compactness=10.0, max_iter=10, sigma=5):
     pixels = slic(image, n_segments=number_of_segments, compactness=compactness, max_iter=max_iter, sigma=sigma)
     return pixels
 
@@ -37,11 +37,11 @@ def get_segment_pixels(pixel_segments):
 
 
 def show_plot(image, pixel_segments):
-    fig = plt.figure("Superpixels")
+    fig = matplotlib.pyplot.figure("Superpixels")
     ax = fig.add_subplot(1, 1, 1)
     ax.imshow(mark_boundaries(image, pixel_segments))
-    plt.axis("off")
-    plt.show()
+    matplotlib.pyplot.axis("off")
+    matplotlib.pyplot.show()
 
 
 def main():
@@ -58,8 +58,8 @@ def main():
 
     if args["save"]:
         io.imsave('super-pixels.png', mark_boundaries(image, segments))
-
-    show_plot(image, segments)
+    else:
+        show_plot(image, segments)
 
 
 if __name__ == '__main__':

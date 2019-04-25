@@ -1,48 +1,34 @@
 import cv2
-import slic
 
 
-def main():
-    parser = slic.argparse.ArgumentParser()
-    parser.add_argument("--image", required=True, help="Path to the image")
-    parser.add_argument("--segments", type=int, default=300, help="Number of segments")
-    parser.add_argument("--save", help="Save the image?")
-    parser.add_argument("--labels", nargs='+', type=int,
-                        help="Segment labels marking region where features should be detected")
-    args = vars(parser.parse_args())
+# accepts path to the image file and returns uint8 representation of the image
+def read_image_as_uint8(filename):
+    return cv2.imread(filename)
 
-    # generate super-pixel segments from image using SLIC
-    img_float64 = slic.get_image_as_float(args["image"])
-    segments = slic.get_pixel_segments(img_float64, args["segments"])
 
-    # save super-pixel representation or plot it
-    if args["save"]:
-        slic.io.imsave('super-pixels.png', slic.mark_boundaries(img_float64, segments))
-    else:
-        slic.show_plot(img_float64, segments)
+# accepts an uint8 BGR image and converts it to grayvalue
+def to_gray_value(img_uint8):
+    return cv2.cvtColor(img_uint8, cv2.COLOR_BGR2GRAY)
 
-    img_uint8 = cv2.imread(args["image"])
-    gray = cv2.cvtColor(img_uint8, cv2.COLOR_BGR2GRAY)
 
+# accepts an uint8 grayvalue image and returns the SIFT keypoints
+def get_keypoints(gray_img_uint8, mask=None):
     sift = cv2.xfeatures2d_SIFT.create()
+    return sift.detect(gray_img_uint8, mask)
 
-    # detect features at specified super-pixel labels, or over entire image
-    if args["labels"]:
-        mask = slic.get_mask(segments, args["labels"])
-        slic.io.imsave('mask.png', mask)
-        kp, des = sift.detectAndCompute(gray, mask)
+
+# accepts an uint8 grayvalue image and returns the descriptors
+def get_descriptors(gray_img_uint8, keypoints):
+    sift = cv2.xfeatures2d_SIFT.create()
+    return sift.compute(gray_img_uint8, keypoints)
+
+
+# accepts an uint8 input image, keypoints, and uint8 BGR output image, and optional detailed boolean
+# outputs the keypoints as images
+def draw_keypoints(img_uint8, keypoints, out_img_uint8, detailed=False):
+    if detailed:
+        cv2.drawKeypoints(img_uint8, keypoints, out_img_uint8, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        cv2.imwrite('sift_keypoints_rich.png', out_img_uint8)
     else:
-        kp, des = sift.detectAndCompute(gray, None)
-
-    # draw keypoints
-    cv2.drawKeypoints(gray, kp, img_uint8)
-    cv2.imwrite("sift_keypoints.jpg", img_uint8)
-
-    # draw more detailed keypoints
-    cv2.drawKeypoints(gray, kp, img_uint8, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-    cv2.imwrite('sift_keypoints_rich.jpg', img_uint8)
-
-
-if __name__ == '__main__':
-    main()
-
+        cv2.drawKeypoints(img_uint8, keypoints, out_img_uint8)
+        cv2.imwrite("sift_keypoints.png", out_img_uint8)

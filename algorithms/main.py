@@ -1,5 +1,6 @@
 import slic
 import sift
+import histogram
 import argparse
 import copy
 
@@ -14,7 +15,7 @@ def main():
     args = vars(parser.parse_args())
 
     # generate super-pixel segments from image using SLIC
-    img_float64 = slic.read_image_as_float(args["image"])
+    img_float64 = slic.read_image_as_float64(args["image"])
     segmented_pixels = slic.get_segmented_pixels(img_float64, args["segments"])
 
     # save super-pixel representation or plot it
@@ -37,6 +38,8 @@ def main():
     out = copy.deepcopy(img_uint8)
     sift.draw_keypoints(img_uint8, kp, out)
     sift.draw_keypoints(img_uint8, kp, out, detailed=True)
+
+    histogram.histograms(img_uint8)
 
 
 if __name__ == '__main__':

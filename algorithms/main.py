@@ -27,19 +27,23 @@ def main():
     img_uint8 = sift.read_image_as_uint8(args["image"])
     gray_uint8 = sift.to_gray_value(img_uint8)
 
-    # detect features at specified super-pixel labels, or over entire image
+    # Create mask if labels are given, otherwise mask=None
+    mask = None
     if args["labels"]:
         mask = slic.get_mask(segmented_pixels, args["labels"])
         slic.io.imsave('mask.png', mask)
-        kp = sift.get_keypoints(gray_uint8, mask)
-    else:
-        kp = sift.get_keypoints(gray_uint8)
 
+    # SIFT
+    kp = sift.get_keypoints(gray_uint8, mask)
     out = copy.deepcopy(img_uint8)
     sift.draw_keypoints(img_uint8, kp, out)
     sift.draw_keypoints(img_uint8, kp, out, detailed=True)
 
-    histogram.histograms(img_uint8)
+    # Histograms
+    hist = histogram.get_histogram(img_uint8, mask)
+    hist_gray = histogram.get_histogram(gray_uint8, mask, colors='k')
+    histogram.plot_histogram(hist)
+    histogram.plot_histogram(hist_gray)
 
 
 if __name__ == '__main__':

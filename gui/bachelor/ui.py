@@ -13,7 +13,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.context_menu)
         self.listWidget.setViewMode(QtWidgets.QListView.IconMode)
-        self.listWidget.setIconSize(QtCore.QSize(64,64))
+        self.listWidget.setIconSize(QtCore.QSize(64, 64))
         self.listWidget.currentItemChanged.connect(self.choose_image)
         self.point = (-1, -1) #current point
         self.pointlist = [] # contains all marked points

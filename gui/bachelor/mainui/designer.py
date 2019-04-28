@@ -30,7 +30,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addWidget(self.label)
         self.superpixelspin = QtWidgets.QSpinBox(self.frame_3)
         self.superpixelspin.setMinimum(1)
-        self.superpixelspin.setMaximum(200)
+        self.superpixelspin.setMaximum(999)
         self.superpixelspin.setProperty("value", 100)
         self.superpixelspin.setObjectName("superpixelspin")
         self.verticalLayout_2.addWidget(self.superpixelspin)

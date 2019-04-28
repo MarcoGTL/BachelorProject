@@ -78,8 +78,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def change_super_pixel(self):
         if self.listWidget.currentItem() is not None:
-            self.superpixel = slic.get_segmented_pixels(self.img_float, self.superpixelspin.value())
             if self.superpixelcheck.isChecked():
+                self.superpixel = slic.get_segmented_pixels(self.img_float, self.superpixelspin.value())
                 self.draw_bounds()
 
     def mov(self, event):
@@ -101,7 +101,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             qp.drawPoint(self.point[0], self.point[1])
 
     def calculate(self):
-        self.gets_slic()
+        self.superpixel = slic.get_segmented_pixels(self.img_float, self.superpixelspin.value())
         i = 0
         foreground = []
         positionprinter = set()

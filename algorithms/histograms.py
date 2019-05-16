@@ -1,5 +1,6 @@
 import cv2
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 # accepts an uint8 image and returns a dictionary of histograms with their color channels as keys

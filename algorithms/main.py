@@ -89,6 +89,9 @@ class Algorithms:
 
             self.imgs_cosegmented[img] = np.uint8(segmentation * 255)
 
+    def get_segment_boundaries(self, img_path):
+        return mark_boundaries(self.imgs_float64[img_path], self.imgs_segmentation[img_path])
+
     # write the segmented images to specified folder
     def save_segmented_images(self, folder):
         for image in self.imgs_segmentation:
@@ -130,6 +133,7 @@ def main():
     image_paths = ['images/bear1.jpg', 'images/bear2.jpg', 'images/bear3.jpg', 'images/bear4.jpg', 'images/bear5.jpg']
 
     alg = Algorithms(image_paths)
+
     alg.slic(500)
     alg.save_segmented_images('output/superpixel')
 

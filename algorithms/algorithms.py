@@ -9,6 +9,7 @@ import coseg
 from scipy.spatial import Delaunay
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
+from skimage.segmentation import find_boundaries
 
 
 class Algorithms:
@@ -90,7 +91,7 @@ class Algorithms:
             self.imgs_cosegmented[img] = np.uint8(segmentation * 255)
 
     def get_segment_boundaries(self, img_path):
-        return mark_boundaries(self.imgs_float64[img_path], self.imgs_segmentation[img_path])
+        return find_boundaries(self.imgs_segmentation[img_path])
 
     # write the segmented images to specified folder
     def save_segmented_images(self, folder):
@@ -138,6 +139,11 @@ def main():
     alg.save_segmented_images('output/superpixel')
 
     alg.hsv_histograms()
+
+    boundaries = alg.get_segment_boundaries('images/bear1.jpg')
+
+    print(boundaries)
+    # io.imsave('bear1.jpg', boundaries)
 
     fg_segments, bg_segments = alg.get_fg_bg_from_markings()
 

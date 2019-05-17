@@ -157,5 +157,6 @@ if __name__ == '__main__':
 
 # TODO
 # SLIC superpixel labels containing pixels could be more efficient with numpy
+# Find better neighbor algorithm
 # Work on histograms
 

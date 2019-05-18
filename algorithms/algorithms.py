@@ -20,6 +20,8 @@ class Algorithms:
         self.imgs_segment_neighbors = dict()
         self.imgs_hsv_histograms = dict()
         self.imgs_hsv_histograms_normalized = dict()
+        self.imgs_foreground_segments = dict.fromkeys(image_paths, [])
+        self.imgs_background_segments = dict.fromkeys(image_paths, [])
         self.imgs_cosegmented = dict()
 
     # generate super-pixel segments for all images using SLIC
@@ -33,10 +35,10 @@ class Algorithms:
     # generate hsv histograms for every segment in all images
     # also generates normalized versions
     def compute_histograms_hsv(self, bins_H=20, bins_S=20, range_H=None, range_S=None):
-        if range_S is None:
-            range_S = [0, 1]
         if range_H is None:
             range_H = [0, 360]
+        if range_S is None:
+            range_S = [0, 1]
         for img in self.images:
             hsv = cv2.cvtColor(self.imgs_float64[img].astype('float32'), cv2.COLOR_BGR2HSV)
             self.imgs_hsv_histograms[img] = \
@@ -58,34 +60,37 @@ class Algorithms:
                     self.imgs_segment_neighbors[img][neighbor_edges[0][i]].append(neighbor_edges[1][i])
                     self.imgs_segment_neighbors[img][neighbor_edges[1][i]].append(neighbor_edges[0][i])
 
-    def compute_cosegmentations(self, fg_segments, bg_segments):
+    # sets the foreground of the image at image_path to segments
+    def set_fg_segments(self, image_path, segments):
+        self.imgs_foreground_segments[image_path] = segments
+
+    # sets the background of the image at image_path to segments
+    def set_bg_segments(self, image_path, segments):
+        self.imgs_background_segments[image_path] = segments
+
+    def compute_cosegmentations(self):
         # get cumulative BG/FG histograms, being the sum of the selected superpixel IDs normalized
         h_fg = None
         h_bg = None
         for img in self.images:
-            if img in fg_segments:
+            if img in self.imgs_foreground_segments:
                 # TODO this is ugly
                 if h_fg is None:
-                    h_fg = np.sum(self.imgs_hsv_histograms[img][fg_segments[img]], axis=0)
+                    h_fg = np.sum(self.imgs_hsv_histograms[img][self.imgs_foreground_segments[img]], axis=0)
                 else:
-                    h_fg += np.sum(self.imgs_hsv_histograms[img][fg_segments[img]], axis=0)
+                    h_fg += np.sum(self.imgs_hsv_histograms[img][self.imgs_foreground_segments[img]], axis=0)
+            if img in self.imgs_background_segments:
                 if h_bg is None:
-                    h_bg = np.sum(self.imgs_hsv_histograms[img][bg_segments[img]], axis=0)
+                    h_bg = np.sum(self.imgs_hsv_histograms[img][self.imgs_background_segments[img]], axis=0)
                 else:
-                    h_bg += np.sum(self.imgs_hsv_histograms[img][bg_segments[img]], axis=0)
+                    h_bg += np.sum(self.imgs_hsv_histograms[img][self.imgs_background_segments[img]], axis=0)
         fg_cumulative_hist = h_fg / h_fg.sum()
         bg_cumulative_hist = h_bg / h_bg.sum()
 
         for img in self.images:
-            # TODO this is also ugly
-            if img in fg_segments:
-                foreground = fg_segments[img]
-            else:
-                foreground = []
-            if img in bg_segments:
-                background = bg_segments[img]
-            else:
-                background = []
+            foreground = self.imgs_foreground_segments[img]
+            background = self.imgs_background_segments[img]
+
             graph_cut = coseg.do_graph_cut((fg_cumulative_hist, bg_cumulative_hist),
                                            (foreground, background),
                                            self.imgs_hsv_histograms_normalized[img],
@@ -121,19 +126,6 @@ class Algorithms:
 
             plt.savefig("output/segmentation/" + img.split('/')[-1], bbox_inches='tight', dpi=96)
 
-    # Function that uses marking images in the markings folder to construct fg_segments and bg_segments
-    # - Marking images should be the same filename as the image they mark
-    # - Marking images should be white with red pixels marking foreground and blue pixels marking background
-    def get_fg_bg_from_markings(self):
-        fg_segments = dict()
-        bg_segments = dict()
-        for img_path in self.images:
-            marking = cv2.imread('markings/'+img_path.split('/')[-1])
-            if marking is not None:
-                fg_segments[img_path] = np.unique(self.imgs_segmentation[img_path][marking[:, :, 0] != 255])
-                bg_segments[img_path] = np.unique(self.imgs_segmentation[img_path][marking[:, :, 2] != 255])
-        return fg_segments, bg_segments
-
 
 def main():
     image_paths = ['images/bear1.jpg', 'images/bear2.jpg', 'images/bear3.jpg', 'images/bear4.jpg', 'images/bear5.jpg']
@@ -141,17 +133,26 @@ def main():
     alg = Algorithms(image_paths)
 
     # Segment the images into superpixels using slic and compute for each superpixel a list of its neighbors
-    alg.compute_superpixels_slic(500)
+    alg.compute_superpixels_slic(num_segments=500, compactness=10.0, max_item=10, sigma=5)
     alg.compute_neighbors()
 
+    alg.save_segmented_images('output/superpixel')
+
     # Extract features
-    alg.compute_histograms_hsv()
+    alg.compute_histograms_hsv(bins_H=20, bins_S=20, range_H=[0, 360], range_S=[0, 1])
 
-    # Build a list of foreground and background segment dictionaries
-    # structure should be e.g. fg_segments = {'image_path': [1,2,3], 'image_path': [4,5,6]}
-    fg_segments, bg_segments = alg.get_fg_bg_from_markings()
+    # Retrieve foreground and background segments from marking images in markings folder
+    # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
+    # have the same name as the image they are markings for
+    for image_path in image_paths:
+        marking = cv2.imread('markings/'+image_path.split('/')[-1])
+        if marking is not None:
+            fg_segments = np.unique(alg.imgs_segmentation[image_path][marking[:, :, 0] != 255])
+            bg_segments = np.unique(alg.imgs_segmentation[image_path][marking[:, :, 2] != 255])
+            alg.set_fg_segments(image_path, fg_segments)
+            alg.set_bg_segments(image_path, bg_segments)
 
-    alg.compute_cosegmentations(fg_segments, bg_segments)
+    alg.compute_cosegmentations()
 
     alg.plot_cosegmentations()
 

@@ -5,3 +5,5 @@ gui/.idea/
 gui/venv/
 gui/__pycache__/
 algorithms/thing.py
+.idea
+venv

@@ -70,10 +70,9 @@ def do_graph_cut(fgbg_hists, fgbg_superpixels, norm_hists, neighbors):
     hist_comp_alg = cv2.HISTCMP_KL_DIV
 
     # Smoothness term: cost between neighbors
-    indptr,indices = neighbors
-    for i in range(len(indptr)-1):
-        N = indices[indptr[i]:indptr[i+1]] # list of neighbor superpixels
-        hi = norm_hists[i]                 # histogram for center
+    for i in range(len(neighbors)):
+        N = neighbors[i]    # list of neighbor superpixels
+        hi = norm_hists[i]  # histogram for center
         for n in N:
             if (n < 0) or (n > num_nodes):
                 continue
@@ -81,17 +80,17 @@ def do_graph_cut(fgbg_hists, fgbg_superpixels, norm_hists, neighbors):
             # histogram matching
             hn = norm_hists[n]             # histogram for neighbor
             g.add_edge(nodes[i], nodes[n], 20-cv2.compareHist(hi, hn, hist_comp_alg),
-                                           20-cv2.compareHist(hn, hi, hist_comp_alg))
+                       20-cv2.compareHist(hn, hi, hist_comp_alg))
 
     # Match term: cost to FG/BG
-    for i,h in enumerate(norm_hists):
+    for i, h in enumerate(norm_hists):
         if i in fgbg_superpixels[0]:
             g.add_tedge(nodes[i], 0, 1000) # FG - set high cost to BG
         elif i in fgbg_superpixels[1]:
             g.add_tedge(nodes[i], 1000, 0) # BG - set high cost to FG
         else:
             g.add_tedge(nodes[i], cv2.compareHist(fgbg_hists[0], h, hist_comp_alg),
-                                  cv2.compareHist(fgbg_hists[1], h, hist_comp_alg))
+                        cv2.compareHist(fgbg_hists[1], h, hist_comp_alg))
 
     g.maxflow()
     return g.get_grid_segments(nodes)

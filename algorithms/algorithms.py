@@ -6,7 +6,6 @@ import histograms
 import argparse
 import copy
 import coseg
-from scipy.spatial import Delaunay
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
 from skimage.segmentation import find_boundaries
@@ -24,7 +23,7 @@ class Algorithms:
         self.imgs_cosegmented = dict()
 
     # generate super-pixel segments for all images using SLIC
-    def slic(self, num_segments, compactness=10.0, max_item=10, sigma=5):
+    def compute_superpixels_slic(self, num_segments, compactness=10.0, max_item=10, sigma=5):
         for image in self.images:
             self.imgs_float64[image] = slic.read_image_as_float64(image)
             self.imgs_segmentation[image] = slic.get_segmented_image(self.imgs_float64[image], num_segments,
@@ -33,7 +32,7 @@ class Algorithms:
 
     # generate hsv histograms for every segment in all images
     # also generates normalized versions
-    def hsv_histograms(self, bins_H=20, bins_S=20, range_H=None, range_S=None):
+    def compute_histograms_hsv(self, bins_H=20, bins_S=20, range_H=None, range_S=None):
         if range_S is None:
             range_S = [0, 1]
         if range_H is None:
@@ -47,13 +46,19 @@ class Algorithms:
 
             self.imgs_hsv_histograms_normalized[img] = np.float32([h / h.sum() for h in self.imgs_hsv_histograms[img]])
 
-    def perform_cosegmentation(self, fg_segments, bg_segments):
-        # find the neighbor segments of each segment using Delaunay triangulation
+    # compute the neighbor segments of each segment
+    def compute_neighbors(self):
         for img in self.images:
-            centers = np.array([np.mean(np.nonzero(self.imgs_segmentation[img] == i), axis=1)
-                                for i in self.imgs_segment_ids[img]])
-            self.imgs_segment_neighbors[img] = Delaunay(centers).vertex_neighbor_vertices
+            vs_right = np.vstack([self.imgs_segmentation[img][:, :-1].ravel(), self.imgs_segmentation[img][:, 1:].ravel()])
+            vs_below = np.vstack([self.imgs_segmentation[img][:-1, :].ravel(), self.imgs_segmentation[img][1:, :].ravel()])
+            neighbor_edges = np.unique(np.hstack([vs_right, vs_below]), axis=1)
+            self.imgs_segment_neighbors[img] = [[] for x in self.imgs_segment_ids[img]]
+            for i in range(len(neighbor_edges[0])):
+                if neighbor_edges[0][i] != neighbor_edges[1][i]:
+                    self.imgs_segment_neighbors[img][neighbor_edges[0][i]].append(neighbor_edges[1][i])
+                    self.imgs_segment_neighbors[img][neighbor_edges[1][i]].append(neighbor_edges[0][i])
 
+    def compute_cosegmentations(self, fg_segments, bg_segments):
         # get cumulative BG/FG histograms, being the sum of the selected superpixel IDs normalized
         h_fg = None
         h_bg = None
@@ -135,19 +140,18 @@ def main():
 
     alg = Algorithms(image_paths)
 
-    alg.slic(500)
-    alg.save_segmented_images('output/superpixel')
+    # Segment the images into superpixels using slic and compute for each superpixel a list of its neighbors
+    alg.compute_superpixels_slic(500)
+    alg.compute_neighbors()
 
-    alg.hsv_histograms()
+    # Extract features
+    alg.compute_histograms_hsv()
 
-    boundaries = alg.get_segment_boundaries('images/bear1.jpg')
-
-    print(boundaries)
-    # io.imsave('bear1.jpg', boundaries)
-
+    # Build a list of foreground and background segment dictionaries
+    # structure should be e.g. fg_segments = {'image_path': [1,2,3], 'image_path': [4,5,6]}
     fg_segments, bg_segments = alg.get_fg_bg_from_markings()
 
-    alg.perform_cosegmentation(fg_segments, bg_segments)
+    alg.compute_cosegmentations(fg_segments, bg_segments)
 
     alg.plot_cosegmentations()
 

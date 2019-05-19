@@ -35,27 +35,29 @@ class Algorithms:
 
     # generate hsv histograms for every segment in all images
     # also generates normalized versions
-    def compute_histograms_hsv(self, bins_H=20, bins_S=20, range_H=None, range_S=None):
-        if range_H is None:
-            range_H = [0, 360]
-        if range_S is None:
-            range_S = [0, 1]
+    def compute_histograms_hsv(self, bins_H=20, bins_S=20):
         for img in self.images:
             hsv = cv2.cvtColor(self.imgs_float64[img].astype('float32'), cv2.COLOR_BGR2HSV)
-            self.imgs_histograms_hsv[img] = np.float32(cv2.calcHist([hsv], [0, 1], None, [bins_H, bins_S], range_H+range_S))
-
-            plt.imshow(self.imgs_histograms_hsv[img], interpolation='nearest')
-            plt.xlabel('Saturation')
-            plt.ylabel('Hue')
-            plt.show()
+            self.imgs_histograms_hsv[img] = np.float32(cv2.calcHist([hsv], [0, 1], None, [bins_H, bins_S], [0, 360, 0, 1]))
 
             self.imgs_segment_histograms_hsv[img] = \
                 np.float32([cv2.calcHist([hsv], [0, 1], np.uint8(self.imgs_segmentation[img] == i), [bins_H, bins_S],
-                                         range_H+range_S).flatten() for i in self.imgs_segment_ids[img]])
+                                         [0, 360, 0, 1]) for i in self.imgs_segment_ids[img]])
 
-            self.imgs_segment_histograms_hsv_normalized[img] = np.float32([h / h.sum() for h in self.imgs_segment_histograms_hsv[img]])
+            self.imgs_segment_histograms_hsv_normalized[img] = np.float32([h / h.flatten().sum() for h in self.imgs_segment_histograms_hsv[img]])
 
-
+    # Shows a plot of the histogram of the entire image at image_path or one of its segments
+    def show_histogram(self, image_path, segment=None):
+        if segment is None:
+            plt.title(image_path.split('/')[-1])
+            plt.imshow(self.imgs_histograms_hsv[image_path], interpolation='nearest')
+        else:
+            plt.title(image_path.split('/')[-1] + '    segment ' + str(segment))
+            plt.imshow(self.imgs_segment_histograms_hsv[image_path][segment], interpolation='nearest')
+        plt.xlabel('Saturation bins')
+        plt.ylabel('Hue bins')
+        plt.show()
+        plt.clf()
 
     # compute the neighbor segments of each segment
     def compute_neighbors(self):
@@ -157,7 +159,6 @@ class Algorithms:
             plt.subplot(1, 2, 2), plt.xticks([]), plt.yticks([])
             plt.title('segmentation')
             plt.imshow(self.imgs_cosegmented[img])
-
             plt.subplot(1, 2, 1), plt.xticks([]), plt.yticks([])
             superpixels = mark_boundaries(self.imgs_float64[img], self.imgs_segmentation[img])
             marking = cv2.imread('markings/' + img.split('/')[-1])
@@ -168,6 +169,7 @@ class Algorithms:
             plt.title("Superpixels + markings")
 
             plt.savefig("output/segmentation/" + img.split('/')[-1], bbox_inches='tight', dpi=96)
+            plt.clf()
 
 
 def main():
@@ -182,7 +184,7 @@ def main():
     alg.save_segmented_images('output/superpixel')
 
     # Extract features
-    alg.compute_histograms_hsv(bins_H=20, bins_S=20, range_H=[0, 360], range_S=[0, 1])
+    alg.compute_histograms_hsv(bins_H=20, bins_S=20)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
@@ -198,6 +200,9 @@ def main():
     alg.compute_cosegmentations()
 
     alg.plot_cosegmentations()
+
+    alg.show_histogram('images/bear1.jpg')
+    alg.show_histogram('images/bear1.jpg', 1)
 
 
 if __name__ == '__main__':

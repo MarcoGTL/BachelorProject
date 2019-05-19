@@ -5,7 +5,7 @@ import sift
 import histograms
 import argparse
 import copy
-import coseg
+import maxflow
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
 from skimage.segmentation import find_boundaries
@@ -68,6 +68,42 @@ class Algorithms:
     def set_bg_segments(self, image_path, segments):
         self.imgs_background_segments[image_path] = segments
 
+    # Perform graph cut using superpixels histograms
+    def do_graph_cut(self, image_path, fgbg_hists, fgbg_superpixels):
+        num_nodes = self.imgs_hsv_histograms_normalized[image_path].shape[0]
+        # Create a graph of N nodes, and estimate of 5 edges per node
+        g = maxflow.Graph[float](num_nodes, num_nodes * 5)
+        # Add N nodes
+        nodes = g.add_nodes(num_nodes)
+
+        hist_comp_alg = cv2.HISTCMP_KL_DIV
+
+        # Smoothness term: cost between neighbors
+        for i in range(len(self.imgs_segment_neighbors[image_path])):
+            N = self.imgs_segment_neighbors[image_path][i]  # list of neighbor superpixels
+            hi = self.imgs_hsv_histograms_normalized[image_path][i]  # histogram for center
+            for n in N:
+                if (n < 0) or (n > num_nodes):
+                    continue
+                # Create two edges (forwards and backwards) with capacities based on
+                # histogram matching
+                hn = self.imgs_hsv_histograms_normalized[image_path][n]  # histogram for neighbor
+                g.add_edge(nodes[i], nodes[n], 20 - cv2.compareHist(hi, hn, hist_comp_alg),
+                           20 - cv2.compareHist(hn, hi, hist_comp_alg))
+
+        # Match term: cost to FG/BG
+        for i, h in enumerate(self.imgs_hsv_histograms_normalized[image_path]):
+            if i in fgbg_superpixels[0]:
+                g.add_tedge(nodes[i], 0, 1000)  # FG - set high cost to BG
+            elif i in fgbg_superpixels[1]:
+                g.add_tedge(nodes[i], 1000, 0)  # BG - set high cost to FG
+            else:
+                g.add_tedge(nodes[i], cv2.compareHist(fgbg_hists[0], h, hist_comp_alg),
+                            cv2.compareHist(fgbg_hists[1], h, hist_comp_alg))
+
+        g.maxflow()
+        return g.get_grid_segments(nodes)
+
     def compute_cosegmentations(self):
         # get cumulative BG/FG histograms, being the sum of the selected superpixel IDs normalized
         h_fg = None
@@ -91,12 +127,10 @@ class Algorithms:
             foreground = self.imgs_foreground_segments[img]
             background = self.imgs_background_segments[img]
 
-            graph_cut = coseg.do_graph_cut((fg_cumulative_hist, bg_cumulative_hist),
-                                           (foreground, background),
-                                           self.imgs_hsv_histograms_normalized[img],
-                                           self.imgs_segment_neighbors[img])
+            graph_cut = self.do_graph_cut(img, (fg_cumulative_hist, bg_cumulative_hist), (foreground, background))
 
-            segmentation = coseg.pixels_for_segment_selection(self.imgs_segmentation[img], np.nonzero(graph_cut))
+            # Get a bool mask of the pixels for a given selection of superpixel IDs
+            segmentation = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True, False)
 
             self.imgs_cosegmented[img] = np.uint8(segmentation * 255)
 
@@ -162,6 +196,5 @@ if __name__ == '__main__':
 
 # TODO
 # SLIC superpixel labels containing pixels could be more efficient with numpy
-# Find better neighbor algorithm
 # Work on histograms
 

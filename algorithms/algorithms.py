@@ -18,8 +18,9 @@ class Algorithms:
         self.imgs_segmentation = dict()
         self.imgs_segment_ids = dict()
         self.imgs_segment_neighbors = dict()
-        self.imgs_hsv_histograms = dict()
-        self.imgs_hsv_histograms_normalized = dict()
+        self.imgs_segment_histograms_hsv = dict()
+        self.imgs_segment_histograms_hsv_normalized = dict()
+        self.imgs_histograms_hsv = dict()
         self.imgs_foreground_segments = dict.fromkeys(image_paths, [])
         self.imgs_background_segments = dict.fromkeys(image_paths, [])
         self.imgs_cosegmented = dict()
@@ -41,12 +42,20 @@ class Algorithms:
             range_S = [0, 1]
         for img in self.images:
             hsv = cv2.cvtColor(self.imgs_float64[img].astype('float32'), cv2.COLOR_BGR2HSV)
-            self.imgs_hsv_histograms[img] = \
-                np.float32([cv2.calcHist([hsv], [0, 1],
-                                         np.uint8(self.imgs_segmentation[img] == i), [bins_H, bins_S],
+            self.imgs_histograms_hsv[img] = np.float32(cv2.calcHist([hsv], [0, 1], None, [bins_H, bins_S], range_H+range_S))
+
+            plt.imshow(self.imgs_histograms_hsv[img], interpolation='nearest')
+            plt.xlabel('Saturation')
+            plt.ylabel('Hue')
+            plt.show()
+
+            self.imgs_segment_histograms_hsv[img] = \
+                np.float32([cv2.calcHist([hsv], [0, 1], np.uint8(self.imgs_segmentation[img] == i), [bins_H, bins_S],
                                          range_H+range_S).flatten() for i in self.imgs_segment_ids[img]])
 
-            self.imgs_hsv_histograms_normalized[img] = np.float32([h / h.sum() for h in self.imgs_hsv_histograms[img]])
+            self.imgs_segment_histograms_hsv_normalized[img] = np.float32([h / h.sum() for h in self.imgs_segment_histograms_hsv[img]])
+
+
 
     # compute the neighbor segments of each segment
     def compute_neighbors(self):
@@ -70,7 +79,7 @@ class Algorithms:
 
     # Perform graph cut using superpixels histograms
     def do_graph_cut(self, image_path, fgbg_hists, fgbg_superpixels):
-        num_nodes = self.imgs_hsv_histograms_normalized[image_path].shape[0]
+        num_nodes = self.imgs_segment_histograms_hsv_normalized[image_path].shape[0]
         # Create a graph of N nodes, and estimate of 5 edges per node
         g = maxflow.Graph[float](num_nodes, num_nodes * 5)
         # Add N nodes
@@ -81,18 +90,18 @@ class Algorithms:
         # Smoothness term: cost between neighbors
         for i in range(len(self.imgs_segment_neighbors[image_path])):
             N = self.imgs_segment_neighbors[image_path][i]  # list of neighbor superpixels
-            hi = self.imgs_hsv_histograms_normalized[image_path][i]  # histogram for center
+            hi = self.imgs_segment_histograms_hsv_normalized[image_path][i]  # histogram for center
             for n in N:
                 if (n < 0) or (n > num_nodes):
                     continue
                 # Create two edges (forwards and backwards) with capacities based on
                 # histogram matching
-                hn = self.imgs_hsv_histograms_normalized[image_path][n]  # histogram for neighbor
+                hn = self.imgs_segment_histograms_hsv_normalized[image_path][n]  # histogram for neighbor
                 g.add_edge(nodes[i], nodes[n], 20 - cv2.compareHist(hi, hn, hist_comp_alg),
                            20 - cv2.compareHist(hn, hi, hist_comp_alg))
 
         # Match term: cost to FG/BG
-        for i, h in enumerate(self.imgs_hsv_histograms_normalized[image_path]):
+        for i, h in enumerate(self.imgs_segment_histograms_hsv_normalized[image_path]):
             if i in fgbg_superpixels[0]:
                 g.add_tedge(nodes[i], 0, 1000)  # FG - set high cost to BG
             elif i in fgbg_superpixels[1]:
@@ -112,14 +121,14 @@ class Algorithms:
             if img in self.imgs_foreground_segments:
                 # TODO this is ugly
                 if h_fg is None:
-                    h_fg = np.sum(self.imgs_hsv_histograms[img][self.imgs_foreground_segments[img]], axis=0)
+                    h_fg = np.sum(self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]], axis=0)
                 else:
-                    h_fg += np.sum(self.imgs_hsv_histograms[img][self.imgs_foreground_segments[img]], axis=0)
+                    h_fg += np.sum(self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]], axis=0)
             if img in self.imgs_background_segments:
                 if h_bg is None:
-                    h_bg = np.sum(self.imgs_hsv_histograms[img][self.imgs_background_segments[img]], axis=0)
+                    h_bg = np.sum(self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]], axis=0)
                 else:
-                    h_bg += np.sum(self.imgs_hsv_histograms[img][self.imgs_background_segments[img]], axis=0)
+                    h_bg += np.sum(self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]], axis=0)
         fg_cumulative_hist = h_fg / h_fg.sum()
         bg_cumulative_hist = h_bg / h_bg.sum()
 

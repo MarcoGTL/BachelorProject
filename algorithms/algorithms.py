@@ -79,17 +79,33 @@ class Algorithms:
     def set_bg_segments(self, image_path, segments):
         self.imgs_background_segments[image_path] = segments
 
+    def compute_cumulative_histograms(self):
+        # for each image sum up the histograms of the chosen segments
+        histograms_fg = [
+            np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]]],
+                   axis=0) for img in self.images]
+        histograms_bg = [
+            np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]]],
+                   axis=0) for img in self.images]
+
+        # combine the histograms for each image into one
+        histogram_fg = np.sum(histograms_fg, axis=0)
+        histogram_bg = np.sum(histograms_bg, axis=0)
+
+        # normalize the histograms to get the final cumulative histograms
+        return histogram_fg / histogram_fg.sum(), histogram_bg / histogram_bg.sum()
+
     # Perform graph cut using superpixels histograms
-    def do_graph_cut(self, image_path, fgbg_hists, fgbg_superpixels):
-        num_nodes = self.imgs_segment_histograms_hsv_normalized[image_path].shape[0]
-        # Create a graph of N nodes, and estimate of 5 edges per node
+    def do_graph_cut(self, image_path, fg_hist, bg_hist, hist_comp_alg=cv2.HISTCMP_KL_DIV):
+        num_nodes = len(self.imgs_segment_ids[image_path])
+
+        # Create a graph of N nodes with an estimate of 5 edges per node
         g = maxflow.Graph[float](num_nodes, num_nodes * 5)
+
         # Add N nodes
         nodes = g.add_nodes(num_nodes)
 
-        hist_comp_alg = cv2.HISTCMP_KL_DIV
-
-        # Smoothness term: cost between neighbors
+        # Initialize smoothness terms: energy between neighbors
         for i in range(len(self.imgs_segment_neighbors[image_path])):
             N = self.imgs_segment_neighbors[image_path][i]  # list of neighbor superpixels
             hi = self.imgs_segment_histograms_hsv_normalized[image_path][i].flatten()  # histogram for center
@@ -102,38 +118,29 @@ class Algorithms:
                 g.add_edge(nodes[i], nodes[n], 20 - cv2.compareHist(hi, hn, hist_comp_alg),
                            20 - cv2.compareHist(hn, hi, hist_comp_alg))
 
-        # Match term: cost to FG/BG
+        # Initialize match terms: energy of assigning node to foreground or background
         for i, h in enumerate(self.imgs_segment_histograms_hsv_normalized[image_path]):
             h = h.flatten()
-            if i in fgbg_superpixels[0]:
-                g.add_tedge(nodes[i], 0, 1000)  # FG - set high cost to BG
-            elif i in fgbg_superpixels[1]:
-                g.add_tedge(nodes[i], 1000, 0)  # BG - set high cost to FG
+            energy_fg = 0
+            energy_bg = 0
+            if i in self.imgs_foreground_segments[image_path]:
+                energy_bg = 1000  # Node is fg -> set high energy for bg
+            elif i in self.imgs_background_segments[image_path]:
+                energy_fg = 1000  # Node is bg -> set high energy for fg
             else:
-                g.add_tedge(nodes[i], cv2.compareHist(fgbg_hists[0], h, hist_comp_alg),
-                            cv2.compareHist(fgbg_hists[1], h, hist_comp_alg))
+                energy_fg = cv2.compareHist(fg_hist, h, hist_comp_alg)
+                energy_bg = cv2.compareHist(bg_hist, h, hist_comp_alg)
+            g.add_tedge(nodes[i], energy_fg, energy_bg)
 
         g.maxflow()
         return g.get_grid_segments(nodes)
 
     def compute_cosegmentations(self):
         # get cumulative BG/FG histograms, being the sum of the selected superpixel IDs normalized
-
-        # for each image sum up the histograms of the chosen segments
-        list_h_fg = [np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]]], axis=0) for img in self.images]
-        list_h_bg = [np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]]], axis=0) for img in self.images]
-
-        # combine the histograms from each image into one
-        combined_h_fg = np.sum(list_h_fg, axis=0)
-        combined_h_bg = np.sum(list_h_bg, axis=0)
-
-        # normalize the histograms to get the cumulative histograms
-        fg_cumulative_hist = combined_h_fg / combined_h_fg.sum()
-        bg_cumulative_hist = combined_h_bg / combined_h_bg.sum()
+        fg_hist, bg_hist = self.compute_cumulative_histograms()
 
         for img in self.images:
-            graph_cut = self.do_graph_cut(img, (fg_cumulative_hist, bg_cumulative_hist),
-                                          (self.imgs_foreground_segments[img], self.imgs_background_segments[img]))
+            graph_cut = self.do_graph_cut(img, fg_hist, bg_hist)
 
             # Get a bool mask of the pixels for a given selection of superpixel IDs
             segmentation = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True, False)
@@ -168,9 +175,9 @@ class Algorithms:
 
 
 if __name__ == '__main__':
-    image_paths = ['images/bear1.jpg', 'images/bear2.jpg', 'images/bear3.jpg', 'images/bear4.jpg', 'images/bear5.jpg']
+    images = ['images/bear1.jpg', 'images/bear2.jpg', 'images/bear3.jpg', 'images/bear4.jpg', 'images/bear5.jpg']
 
-    alg = Algorithms(image_paths)
+    alg = Algorithms(images)
 
     # Segment the images into superpixels using slic and compute for each superpixel a list of its neighbors
     alg.compute_superpixels_slic(num_segments=500, compactness=20.0, max_iter=10, sigma=0)
@@ -184,22 +191,27 @@ if __name__ == '__main__':
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
     # have the same name as the image they are markings for
-    for image_path in image_paths:
-        marking = cv2.imread('markings/'+image_path.split('/')[-1])
+    for image in images:
+        marking = cv2.imread('markings/'+image.split('/')[-1])
         if marking is not None:
-            fg_segments = np.unique(alg.imgs_segmentation[image_path][marking[:, :, 0] != 255])
-            bg_segments = np.unique(alg.imgs_segmentation[image_path][marking[:, :, 2] != 255])
-            alg.set_fg_segments(image_path, fg_segments)
-            alg.set_bg_segments(image_path, bg_segments)
+            fg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 0] != 255])
+            bg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 2] != 255])
+            alg.set_fg_segments(image, fg_segments)
+            alg.set_bg_segments(image, bg_segments)
 
     alg.compute_cosegmentations()
 
     alg.plot_cosegmentations()
 
-    alg.show_histogram('images/bear1.jpg')
-    alg.show_histogram('images/bear1.jpg', 1)
+    #alg.show_histogram('images/bear1.jpg')
+    #alg.show_histogram('images/bear1.jpg', 1)
 
 # TODO
+# Allow for unsupervised segmentation
+# Fix show histogram
+# Implement Sift and HOG into cosegmentation pipeline
+# Alternatives to graph cut
+
+# TODO nice to have
 # SLIC superpixel labels containing pixels could be more efficient with numpy
-# Work on histograms
 

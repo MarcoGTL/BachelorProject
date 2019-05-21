@@ -38,8 +38,6 @@ def find_superpixels_under_marking(marking, superpixels):
 # Sum up the histograms for a given selection of superpixel IDs, normalize
 def cumulative_histogram_for_superpixels(ids, histograms):
     h = np.sum(histograms[ids],axis=0)
-    print(h)
-    exit()
     return h / h.sum()
 
 # Get a bool mask of the pixels for a given selection of superpixel IDs

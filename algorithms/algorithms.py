@@ -1,14 +1,12 @@
 import cv2
 import numpy as np
 import slic
-import sift
-import histograms
-import argparse
-import copy
+from os import listdir
 import maxflow
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
 from skimage.segmentation import find_boundaries
+from sklearn.cluster import KMeans
 
 
 class Algorithms:
@@ -135,7 +133,7 @@ class Algorithms:
         g.maxflow()
         return g.get_grid_segments(nodes)
 
-    def compute_cosegmentations(self):
+    def compute_cosegmentations_graph_cut(self):
         # get cumulative BG/FG histograms, being the sum of the selected superpixel IDs normalized
         fg_hist, bg_hist = self.compute_cumulative_histograms()
 
@@ -173,11 +171,27 @@ class Algorithms:
             plt.savefig("output/segmentation/" + img.split('/')[-1], bbox_inches='tight', dpi=96)
             plt.clf()
 
+    def compute_cosegmentations_k_means(self):
+        data = []
+        for img in self.images:
+            for h in self.imgs_segment_histograms_hsv_normalized[img]:
+                data.append(h.flatten())
+
+        indices = np.cumsum([len(self.imgs_segment_ids[img]) for img in self.images])
+
+        Kmean = KMeans(n_clusters=2)
+        Kmean.fit(data)
+        segmentation = Kmean.labels_
+        for i, img in enumerate(self.images):
+            self.imgs_cosegmented[img] = np.where(np.isin(alg.imgs_segmentation[img], np.nonzero(segmentation[indices[i-1]:indices[i]])), True, False)
+
 
 if __name__ == '__main__':
-    images = ['images/bear1.jpg', 'images/bear2.jpg', 'images/bear3.jpg', 'images/bear4.jpg', 'images/bear5.jpg']
 
-    alg = Algorithms(images)
+    folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
+    image_paths = [folder_path + name for name in listdir(folder_path)]
+
+    alg = Algorithms(image_paths)
 
     # Segment the images into superpixels using slic and compute for each superpixel a list of its neighbors
     alg.compute_superpixels_slic(num_segments=500, compactness=20.0, max_iter=10, sigma=0)
@@ -191,7 +205,7 @@ if __name__ == '__main__':
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
     # have the same name as the image they are markings for
-    for image in images:
+    for image in image_paths:
         marking = cv2.imread('markings/'+image.split('/')[-1])
         if marking is not None:
             fg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 0] != 255])
@@ -199,7 +213,9 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.compute_cosegmentations()
+    alg.compute_cosegmentations_k_means()
+
+    #alg.compute_cosegmentations_graph_cut()
 
     alg.plot_cosegmentations()
 
@@ -207,10 +223,11 @@ if __name__ == '__main__':
     #alg.show_histogram('images/bear1.jpg', 1)
 
 # TODO
-# Allow for unsupervised segmentation
-# Fix show histogram
+
+# Fix show histogram overwriting
 # Implement Sift and HOG into cosegmentation pipeline
-# Alternatives to graph cut
+# Allow for unsupervised segmentation
+    # Alternatives to graph cut -> K-means
 
 # TODO nice to have
 # SLIC superpixel labels containing pixels could be more efficient with numpy

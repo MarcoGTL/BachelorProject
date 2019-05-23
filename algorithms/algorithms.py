@@ -221,7 +221,7 @@ class Algorithms:
             # Get segmentation for current image
             segmentation = segmentations[(indices[i-1] % indices[-1]):indices[i]]
             # For each pixel in superpixel segmentation look up the cluster of its superpixel
-            self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in alg.imgs_segmentation[img]]
+            self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
 
     # Returns a binary mask after cosegmentation of the image at image_path of the segments in segments
     def get_coseg_mask(self, image_path, segments=None):

@@ -18,6 +18,9 @@ class Algorithms:
         self.imgs_segment_ids = dict()                           # List of superpixel indices
         self.imgs_segment_neighbors = dict()                     # Stores for each superpixel a list of its neighbors
         self.imgs_segment_histograms_hsv = dict()                # Stores for each superpixel a hsv histogram
+        self.imgs_sift_keypoints = dict()
+        self.imgs_sift_descriptors = dict()
+        self.imgs_segment_sift_descriptors = dict()
         self.imgs_segment_histograms_hsv_normalized = dict()     # Stores for each superpixel a normalized hsv histogram
         self.imgs_histograms_hsv = dict()                        # A hsv histogram of the entire image
         self.imgs_foreground_segments = dict.fromkeys(image_paths, [])  # List of foreground superpixels
@@ -45,6 +48,20 @@ class Algorithms:
 
             self.imgs_segment_histograms_hsv_normalized[img] = np.float32([h / h.flatten().sum() for h in self.imgs_segment_histograms_hsv[img]])
 
+    def compute_sift(self):
+        sift = cv2.xfeatures2d_SIFT.create()
+        for img in self.images:
+            gray = cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2GRAY)
+            self.imgs_sift_keypoints[img], self.imgs_sift_descriptors[img] = sift.detectAndCompute(gray, None)
+
+            self.imgs_segment_sift_descriptors[img] = [np.zeros(128) for i in self.imgs_segment_ids[img]]
+            # TODO experimental: Give each superpixel one sift descriptor
+            for i in range(len(self.imgs_sift_keypoints[img])):
+                x = int(round(self.imgs_sift_keypoints[img][i].pt[0]))
+                y = int(round(self.imgs_sift_keypoints[img][i].pt[1]))
+                self.imgs_segment_sift_descriptors[img][self.imgs_segmentation[img][y][x]] = self.imgs_sift_descriptors[img][i]
+
+
     # Shows a plot of the histogram of the entire image at image_path or one of its segments
     def show_histogram(self, image_path, segment=None):
         if segment is None:
@@ -64,7 +81,7 @@ class Algorithms:
             vs_right = np.vstack([self.imgs_segmentation[img][:, :-1].ravel(), self.imgs_segmentation[img][:, 1:].ravel()])
             vs_below = np.vstack([self.imgs_segmentation[img][:-1, :].ravel(), self.imgs_segmentation[img][1:, :].ravel()])
             neighbor_edges = np.unique(np.hstack([vs_right, vs_below]), axis=1)
-            self.imgs_segment_neighbors[img] = [[] for x in self.imgs_segment_ids[img]]
+            self.imgs_segment_neighbors[img] = [[] for i in self.imgs_segment_ids[img]]
             for i in range(len(neighbor_edges[0])):
                 if neighbor_edges[0][i] != neighbor_edges[1][i]:
                     self.imgs_segment_neighbors[img][neighbor_edges[0][i]].append(neighbor_edges[1][i])
@@ -80,7 +97,7 @@ class Algorithms:
 
     # To be used after superpixel segmentation and feature extraction
     # Segments the image using graph cut
-    def compute_cosegmentations_graph_cut(self):
+    def perform_graph_cut(self):
         def compute_cumulative_histograms():
             # for each image sum up the histograms of the chosen segments
             histograms_fg = [
@@ -175,11 +192,20 @@ class Algorithms:
 
     # To be used after superpixel segmentation and feature extraction.
     # Splits the images up in num_clusters using the given method.
-    def perform_clustering(self, num_clusters=2, method='spectral'):
+    def perform_clustering(self, num_clusters=2, method='spectral', type='histogram'):
         data = []
         for img in self.images:
-            for h in self.imgs_segment_histograms_hsv_normalized[img]:
-                data.append(h.flatten())
+            if type is 'histogram':
+                for h in self.imgs_segment_histograms_hsv_normalized[img]:
+                    data.append(h.flatten())
+            elif type is 'sift':
+                for s in self.imgs_segment_sift_descriptors[img]:
+                    data.append(s)
+            elif type is 'both':
+                for i in range(len(self.imgs_segment_sift_descriptors[img])):
+                    h = self.imgs_segment_histograms_hsv_normalized[img][i].flatten()
+                    s = self.imgs_segment_sift_descriptors[img][i]
+                    data.append(np.concatenate((h, s)))
 
         indices = np.cumsum([len(self.imgs_segment_ids[img]) for img in self.images])
 
@@ -207,6 +233,7 @@ class Algorithms:
 if __name__ == '__main__':
 
     folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
+    folder_path = '../images_icoseg/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
     image_paths = [folder_path + name for name in listdir(folder_path)]
 
     alg = Algorithms(image_paths)
@@ -218,7 +245,9 @@ if __name__ == '__main__':
     # alg.save_segmented_images('output/superpixel')
 
     # Extract features
-    alg.compute_histograms_hsv(bins_H=20, bins_S=5)
+    alg.compute_sift()
+
+    alg.compute_histograms_hsv(bins_H=20, bins_S=20)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
@@ -231,7 +260,7 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.perform_clustering(6, 'spectral')
+    alg.perform_clustering(2, 'kmeans', 'both')
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))

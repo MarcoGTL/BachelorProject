@@ -1,9 +1,8 @@
 from skimage.segmentation import slic
 from skimage.segmentation import mark_boundaries
-from skimage.segmentation import find_boundaries
 from skimage.util import img_as_float
-from skimage import io
 import matplotlib.pyplot
+from skimage import io
 import numpy
 
 
@@ -19,26 +18,26 @@ def read_image_as_float64(filename):
 # accepts float representation of image and number of (approximate) segments
 # returns a 2d list of pixels of the image containing their segment labels from SLIC
 # for optional arguments refer to https://scikit-image.org/docs/dev/api/skimage.segmentation.html?highlight=slic
-def get_segmented_pixels(image, number_of_segments, compactness=10.0, max_iter=10, sigma=5):
+def get_segmented_image(image, number_of_segments, compactness=10.0, max_iter=10, sigma=5):
     segmented_pixels = slic(image, n_segments=number_of_segments,
                             compactness=compactness, max_iter=max_iter, sigma=sigma)
     return segmented_pixels
 
 
-# accepts 2d list of pixels containing their segment labels
-# returns 1d list of segments containing their pixels
-def get_segments(segmented_pixels):
+# accepts segmented_image and returns a dictionary of superpixel labels containing their pixels
+def get_superpixels(segmented_image):
     # calculate pixels for each segment
-    segments = [[] for i in range(len(segmented_pixels*segmented_pixels))]
-    for i in range(len(segmented_pixels)):
-        for j in range(len(segmented_pixels)):
-            segments[segmented_pixels[i][j]].append(tuple((i, j)))
-    return segments
+    superpixels = dict.fromkeys(numpy.unique(segmented_image), [])
+    for x in range(len(segmented_image)):
+        for y in range(len(segmented_image[x])):
+            superpixel = segmented_image[x][y]
+            superpixels[superpixel] = superpixels[superpixel] + [(x, y)]
+    return superpixels
 
 
 # accepts 2d list of segmented pixels and a list of labels,
 # return a 2d mask where pixels are 255 if they are in the labels list or 0 if not
-def get_mask(segmented_pixels, segment_labels):
+def get_mask_from_superpixels(segmented_pixels, segment_labels):
     return numpy.where(numpy.isin(segmented_pixels, segment_labels), 255, 0).astype('uint8')
 
 
@@ -48,3 +47,7 @@ def show_plot(image, pixel_segments):
     ax.imshow(mark_boundaries(image, pixel_segments))
     matplotlib.pyplot.axis("off")
     matplotlib.pyplot.show()
+
+
+def save_superpixel_image(image, segmented_image, output_path):
+    io.imsave(output_path, mark_boundaries(image, segmented_image))

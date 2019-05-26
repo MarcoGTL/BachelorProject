@@ -17,9 +17,9 @@ class Algorithms:
         self.imgs_segmentation = dict()                          # Stores for each pixel its superpixel it belongs to
         self.imgs_segment_ids = dict()                           # List of superpixel indices
         self.imgs_segment_neighbors = dict()                     # Stores for each superpixel a list of its neighbors
+        self.imgs_segment_centers = dict()
         self.imgs_segment_histograms_hsv = dict()                # Stores for each superpixel a hsv histogram
-        self.imgs_sift_keypoints = dict()
-        self.imgs_sift_descriptors = dict()
+        self.imgs_segment_sift_keypoints = dict()
         self.imgs_segment_sift_descriptors = dict()
         self.imgs_segment_histograms_hsv_normalized = dict()     # Stores for each superpixel a normalized hsv histogram
         self.imgs_histograms_hsv = dict()                        # A hsv histogram of the entire image
@@ -34,6 +34,28 @@ class Algorithms:
             self.imgs_segmentation[image] = slic.get_segmented_image(self.imgs_float64[image], num_segments,
                                                                      compactness, max_iter, sigma)
             self.imgs_segment_ids[image] = np.unique(self.imgs_segmentation[image])
+
+    # compute the neighbor segments of each segment
+    def compute_neighbors(self):
+        for img in self.images:
+            vs_right = np.vstack([self.imgs_segmentation[img][:, :-1].ravel(), self.imgs_segmentation[img][:, 1:].ravel()])
+            vs_below = np.vstack([self.imgs_segmentation[img][:-1, :].ravel(), self.imgs_segmentation[img][1:, :].ravel()])
+            neighbor_edges = np.unique(np.hstack([vs_right, vs_below]), axis=1)
+            self.imgs_segment_neighbors[img] = [[] for i in self.imgs_segment_ids[img]]
+            for i in range(len(neighbor_edges[0])):
+                if neighbor_edges[0][i] != neighbor_edges[1][i]:
+                    self.imgs_segment_neighbors[img][neighbor_edges[0][i]].append(neighbor_edges[1][i])
+                    self.imgs_segment_neighbors[img][neighbor_edges[1][i]].append(neighbor_edges[0][i])
+
+    # compute the center of each segment
+    def compute_centers(self):
+        for img in self.images:
+            self.imgs_segment_centers[img] = []
+            for i in self.imgs_segment_ids[img]:
+                # Retrieve indices of segment i
+                indices = np.where(self.imgs_segmentation[img] == i)
+                # Center is mean of indices
+                self.imgs_segment_centers[img].append((np.mean(indices[0]), np.mean(indices[1])))
 
     # generate hsv histograms for every segment in all images
     # also generates normalized versions
@@ -50,17 +72,11 @@ class Algorithms:
 
     def compute_sift(self):
         sift = cv2.xfeatures2d_SIFT.create()
+
         for img in self.images:
             gray = cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2GRAY)
-            self.imgs_sift_keypoints[img], self.imgs_sift_descriptors[img] = sift.detectAndCompute(gray, None)
-
-            self.imgs_segment_sift_descriptors[img] = [np.zeros(128) for i in self.imgs_segment_ids[img]]
-            # TODO experimental: Give each superpixel one sift descriptor
-            for i in range(len(self.imgs_sift_keypoints[img])):
-                x = int(round(self.imgs_sift_keypoints[img][i].pt[0]))
-                y = int(round(self.imgs_sift_keypoints[img][i].pt[1]))
-                self.imgs_segment_sift_descriptors[img][self.imgs_segmentation[img][y][x]] = self.imgs_sift_descriptors[img][i]
-
+            self.imgs_segment_sift_keypoints[img] = [cv2.KeyPoint(self.imgs_segment_centers[img][i][1], self.imgs_segment_centers[img][i][0], 64.0, -1) for i in self.imgs_segment_ids[img]]
+            self.imgs_segment_sift_keypoints[img], self.imgs_segment_sift_descriptors[img] = sift.compute(gray, self.imgs_segment_sift_keypoints[img])
 
     # Shows a plot of the histogram of the entire image at image_path or one of its segments
     def show_histogram(self, image_path, segment=None):
@@ -74,18 +90,6 @@ class Algorithms:
         plt.ylabel('Hue bins')
         plt.show()
         plt.clf()
-
-    # compute the neighbor segments of each segment
-    def compute_neighbors(self):
-        for img in self.images:
-            vs_right = np.vstack([self.imgs_segmentation[img][:, :-1].ravel(), self.imgs_segmentation[img][:, 1:].ravel()])
-            vs_below = np.vstack([self.imgs_segmentation[img][:-1, :].ravel(), self.imgs_segmentation[img][1:, :].ravel()])
-            neighbor_edges = np.unique(np.hstack([vs_right, vs_below]), axis=1)
-            self.imgs_segment_neighbors[img] = [[] for i in self.imgs_segment_ids[img]]
-            for i in range(len(neighbor_edges[0])):
-                if neighbor_edges[0][i] != neighbor_edges[1][i]:
-                    self.imgs_segment_neighbors[img][neighbor_edges[0][i]].append(neighbor_edges[1][i])
-                    self.imgs_segment_neighbors[img][neighbor_edges[1][i]].append(neighbor_edges[0][i])
 
     # sets the foreground of the image at image_path to segments
     def set_fg_segments(self, image_path, segments):
@@ -241,6 +245,7 @@ if __name__ == '__main__':
     # Segment the images into superpixels using slic and compute for each superpixel a list of its neighbors
     alg.compute_superpixels_slic(num_segments=500, compactness=20.0, max_iter=10, sigma=0)
     alg.compute_neighbors()
+    alg.compute_centers()
 
     # alg.save_segmented_images('output/superpixel')
 
@@ -260,7 +265,7 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.perform_clustering(2, 'kmeans', 'both')
+    alg.perform_clustering(3, 'kmeans', 'sift')
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))

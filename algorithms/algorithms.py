@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import slic
 import clustering
-from os import listdir
+from os import listdir, path
 import maxflow
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
@@ -70,13 +70,17 @@ class Algorithms:
 
             self.imgs_segment_histograms_hsv_normalized[img] = np.float32([h / h.flatten().sum() for h in self.imgs_segment_histograms_hsv[img]])
 
-    def compute_sift(self):
+    def compute_sift(self, keypoint_size=32.0):
         sift = cv2.xfeatures2d_SIFT.create()
-
         for img in self.images:
             gray = cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2GRAY)
-            self.imgs_segment_sift_keypoints[img] = [cv2.KeyPoint(self.imgs_segment_centers[img][i][1], self.imgs_segment_centers[img][i][0], 64.0, -1) for i in self.imgs_segment_ids[img]]
+            self.imgs_segment_sift_keypoints[img] = [cv2.KeyPoint(self.imgs_segment_centers[img][i][1], self.imgs_segment_centers[img][i][0], keypoint_size, -1) for i in self.imgs_segment_ids[img]]
             self.imgs_segment_sift_keypoints[img], self.imgs_segment_sift_descriptors[img] = sift.compute(gray, self.imgs_segment_sift_keypoints[img])
+
+    def compute_hog(self):
+
+        for img in self.images:
+            exit()
 
     # Shows a plot of the histogram of the entire image at image_path or one of its segments
     def show_histogram(self, image_path, segment=None):
@@ -98,101 +102,6 @@ class Algorithms:
     # sets the background of the image at image_path to segments
     def set_bg_segments(self, image_path, segments):
         self.imgs_background_segments[image_path] = segments
-
-    # To be used after superpixel segmentation and feature extraction
-    # Segments the image using graph cut
-    def perform_graph_cut(self):
-        def compute_cumulative_histograms():
-            # for each image sum up the histograms of the chosen segments
-            histograms_fg = [
-                np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]]],
-                       axis=0) for img in self.images]
-            histograms_bg = [
-                np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]]],
-                       axis=0) for img in self.images]
-
-            # combine the histograms for each image into one
-            histogram_fg = np.sum(histograms_fg, axis=0)
-            histogram_bg = np.sum(histograms_bg, axis=0)
-
-            # normalize the histograms to get the final cumulative histograms
-            return histogram_fg / histogram_fg.sum(), histogram_bg / histogram_bg.sum()
-
-        # get cumulative BG/FG histograms, being the sum of the selected superpixel IDs normalized
-        fg_hist, bg_hist = compute_cumulative_histograms()
-
-        def do_graph_cut(image_path, fg_hist, bg_hist, hist_comp_alg=cv2.HISTCMP_KL_DIV):
-            num_nodes = len(self.imgs_segment_ids[image_path])
-
-            # Create a graph of N nodes with an estimate of 5 edges per node
-            g = maxflow.Graph[float](num_nodes, num_nodes * 5)
-
-            # Add N nodes
-            nodes = g.add_nodes(num_nodes)
-
-            # Initialize smoothness terms: energy between neighbors
-            for i in range(len(self.imgs_segment_neighbors[image_path])):
-                N = self.imgs_segment_neighbors[image_path][i]  # list of neighbor superpixels
-                hi = self.imgs_segment_histograms_hsv_normalized[image_path][i].flatten()  # histogram for center
-                for n in N:
-                    if (n < 0) or (n > num_nodes):
-                        continue
-                    # Create two edges (forwards and backwards) with capacities based on
-                    # histogram matching
-                    hn = self.imgs_segment_histograms_hsv_normalized[image_path][n].flatten()  # histogram for neighbor
-                    g.add_edge(nodes[i], nodes[n], 20 - cv2.compareHist(hi, hn, hist_comp_alg),
-                               20 - cv2.compareHist(hn, hi, hist_comp_alg))
-
-            # Initialize match terms: energy of assigning node to foreground or background
-            for i, h in enumerate(self.imgs_segment_histograms_hsv_normalized[image_path]):
-                h = h.flatten()
-                energy_fg = 0
-                energy_bg = 0
-                if i in self.imgs_foreground_segments[image_path]:
-                    energy_bg = 1000  # Node is fg -> set high energy for bg
-                elif i in self.imgs_background_segments[image_path]:
-                    energy_fg = 1000  # Node is bg -> set high energy for fg
-                else:
-                    energy_fg = cv2.compareHist(fg_hist, h, hist_comp_alg)
-                    energy_bg = cv2.compareHist(bg_hist, h, hist_comp_alg)
-                g.add_tedge(nodes[i], energy_fg, energy_bg)
-
-            g.maxflow()
-            return g.get_grid_segments(nodes)
-
-        for img in self.images:
-            graph_cut = do_graph_cut(img, fg_hist, bg_hist)
-
-            # Get a bool mask of the pixels for a given selection of superpixel IDs
-            segmentation = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True, False)
-
-            self.imgs_cosegmented[img] = np.uint8(segmentation * 255)
-
-    def get_segment_boundaries(self, img_path):
-        return find_boundaries(self.imgs_segmentation[img_path])
-
-    # write the segmented images to specified folder
-    def save_segmented_images(self, folder):
-        for image in self.imgs_segmentation:
-            slic.save_superpixel_image(self.imgs_float64[image], self.imgs_segmentation[image],
-                                       folder + '/' + image.split('/')[-1])
-
-    def plot_cosegmentations(self):
-        for img in self.images:
-            plt.subplot(1, 2, 2), plt.xticks([]), plt.yticks([])
-            plt.title('segmentation')
-            plt.imshow(self.imgs_cosegmented[img])
-            plt.subplot(1, 2, 1), plt.xticks([]), plt.yticks([])
-            superpixels = mark_boundaries(self.imgs_float64[img], self.imgs_segmentation[img])
-            marking = cv2.imread('markings/' + img.split('/')[-1])
-            if marking is not None:
-                superpixels[marking[:, :, 0] != 255] = (1, 0, 0)
-                superpixels[marking[:, :, 2] != 255] = (0, 0, 1)
-            plt.imshow(superpixels)
-            plt.title("Superpixels + markings")
-
-            plt.savefig("output/segmentation/" + img.split('/')[-1], bbox_inches='tight', dpi=96)
-            plt.clf()
 
     # To be used after superpixel segmentation and feature extraction.
     # Splits the images up in num_clusters using the given method.
@@ -223,9 +132,97 @@ class Algorithms:
 
         for i, img in enumerate(self.images):
             # Get segmentation for current image
-            segmentation = segmentations[(indices[i-1] % indices[-1]):indices[i]]
+            segmentation = segmentations[(indices[i - 1] % indices[-1]):indices[i]]
             # For each pixel in superpixel segmentation look up the cluster of its superpixel
             self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
+
+    # To be used after superpixel segmentation and feature extraction
+    # Segments the image using graph cut
+    def perform_graph_cut(self, hist_comp_alg=cv2.HISTCMP_KL_DIV):
+        # group the foreground and background segments' histograms in one list
+        histograms_fg = [
+            np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]]],
+                       axis=0) for img in self.images]
+        histograms_bg = [
+            np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]]],
+                       axis=0) for img in self.images]
+
+        # combine the histograms for each image into one by summing them
+        histogram_fg = np.sum(histograms_fg, axis=0)
+        histogram_bg = np.sum(histograms_bg, axis=0)
+
+        # normalize the histograms to get the final cumulative histograms
+        fg_hist = histogram_fg / histogram_fg.sum()
+        bg_hist = histogram_bg / histogram_bg.sum()
+
+        # perform graph-cut for every image
+        for img in self.images:
+            # Create a graph of N nodes with an estimate of 5 edges per node
+            num_nodes = len(self.imgs_segment_ids[img])
+            graph = maxflow.Graph[float](num_nodes, num_nodes * 5)
+
+            # Add the nodes
+            nodes = graph.add_nodes(num_nodes)
+
+            # Initialize match terms: energy of assigning node to foreground or background
+            for i, h in enumerate(self.imgs_segment_histograms_hsv_normalized[img]):
+                hist = h.flatten()
+                energy_fg = 0
+                energy_bg = 0
+                if i in self.imgs_foreground_segments[img]:
+                    energy_bg = 1000  # Node is fg -> set high energy for bg
+                elif i in self.imgs_background_segments[img]:
+                    energy_fg = 1000  # Node is bg -> set high energy for fg
+                else:
+                    # set energy based on histogram matching
+                    energy_fg = cv2.compareHist(fg_hist, hist, hist_comp_alg)
+                    energy_bg = cv2.compareHist(bg_hist, hist, hist_comp_alg)
+                graph.add_tedge(nodes[i], energy_fg, energy_bg)
+
+            # Initialize smoothness terms: energy between neighbors
+            for i in range(len(self.imgs_segment_neighbors[img])):  # Loop over every segment
+                hist = self.imgs_segment_histograms_hsv_normalized[img][i].flatten()
+                for n in self.imgs_segment_neighbors[img][i]:  # For every neighbor of the segment
+                    if (n < 0) or (n > num_nodes):
+                        continue
+                    # Create two edges between segment and its neighbor with cost based on histogram matching
+                    hist_neighbor = self.imgs_segment_histograms_hsv_normalized[img][n].flatten()  # histogram for neighbor
+                    graph.add_edge(nodes[i], nodes[n],
+                                   20 - cv2.compareHist(hist, hist_neighbor, hist_comp_alg),
+                                   20 - cv2.compareHist(hist_neighbor, hist, hist_comp_alg))
+
+            graph.maxflow()
+
+            graph_cut = graph.get_grid_segments(nodes)
+
+            # Get a bool mask of the pixels for a given selection of superpixel IDs
+            self.imgs_cosegmented[img] = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True, False)
+
+    def get_segment_boundaries(self, img_path):
+        return find_boundaries(self.imgs_segmentation[img_path])
+
+    # write the segmented images to specified folder
+    def save_segmented_images(self, folder):
+        for image in self.imgs_segmentation:
+            slic.save_superpixel_image(self.imgs_float64[image], self.imgs_segmentation[image],
+                                       folder + '/' + image.split('/')[-1])
+
+    def plot_cosegmentations(self, folder_path):
+        for img in self.images:
+            plt.subplot(1, 2, 2), plt.xticks([]), plt.yticks([])
+            plt.title('segmentation')
+            plt.imshow(self.imgs_cosegmented[img])
+            plt.subplot(1, 2, 1), plt.xticks([]), plt.yticks([])
+            superpixels = mark_boundaries(self.imgs_float64[img], self.imgs_segmentation[img])
+            marking = cv2.imread(folder_path + 'markings/' + img.split('/')[-1])
+            if marking is not None:
+                superpixels[marking[:, :, 0] != 255] = (1, 0, 0)
+                superpixels[marking[:, :, 2] != 255] = (0, 0, 1)
+            plt.imshow(superpixels)
+            plt.title("Superpixels + markings")
+
+            plt.savefig("output/segmentation/" + img.split('/')[-1], bbox_inches='tight', dpi=96)
+            plt.clf()
 
     # Returns a binary mask after cosegmentation of the image at image_path of the segments in segments
     def get_coseg_mask(self, image_path, segments=None):
@@ -238,7 +235,8 @@ if __name__ == '__main__':
 
     folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
     folder_path = '../images_icoseg/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
-    image_paths = [folder_path + name for name in listdir(folder_path)]
+    folder_path = '../images_icoseg/025 Airshows-helicopter/'
+    image_paths = [folder_path + file for file in listdir(folder_path) if path.isfile(path.join(folder_path, file))]
 
     alg = Algorithms(image_paths)
 
@@ -250,29 +248,28 @@ if __name__ == '__main__':
     # alg.save_segmented_images('output/superpixel')
 
     # Extract features
-    alg.compute_sift()
+    alg.compute_sift(keypoint_size=32.0)
 
-    alg.compute_histograms_hsv(bins_H=20, bins_S=20)
+    alg.compute_histograms_hsv(bins_H=10, bins_S=10)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
     # have the same name as the image they are markings for
     for image in image_paths:
-        marking = cv2.imread('markings/'+image.split('/')[-1])
+        marking = cv2.imread(folder_path + 'markings/' + image.split('/')[-1])
         if marking is not None:
-            fg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 0] != 255])
-            bg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 2] != 255])
+            fg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 2] < 200])
+            bg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 0] < 200])
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.perform_clustering(3, 'kmeans', 'sift')
+    # alg.perform_clustering(4, 'kmeans', 'both')
+    alg.perform_graph_cut()
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))
 
-    # alg.compute_cosegmentations_graph_cut()
-
-    alg.plot_cosegmentations()
+    alg.plot_cosegmentations(folder_path)
 
     # alg.show_histogram('images/bear1.jpg')
     # alg.show_histogram('images/bear1.jpg', 1)

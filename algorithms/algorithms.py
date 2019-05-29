@@ -23,6 +23,7 @@ class Algorithms:
         self.imgs_segment_sift_descriptors = dict()
         self.imgs_segment_histograms_hsv_normalized = dict()     # Stores for each superpixel a normalized hsv histogram
         self.imgs_histograms_hsv = dict()                        # A hsv histogram of the entire image
+        self.imgs_segment_feature_vectors = dict.fromkeys(image_paths, [])
         self.imgs_foreground_segments = dict.fromkeys(image_paths, [])  # List of foreground superpixels
         self.imgs_background_segments = dict.fromkeys(image_paths, [])  # List of background superpixels
         self.imgs_cosegmented = dict()            # Stores for each pixel its segment it belongs to after cosegmentation
@@ -78,22 +79,9 @@ class Algorithms:
             self.imgs_segment_sift_keypoints[img], self.imgs_segment_sift_descriptors[img] = sift.compute(gray, self.imgs_segment_sift_keypoints[img])
 
     def compute_hog(self):
-
         for img in self.images:
+            print('HOG not implemented')
             exit()
-
-    # Shows a plot of the histogram of the entire image at image_path or one of its segments
-    def show_histogram(self, image_path, segment=None):
-        if segment is None:
-            plt.title(image_path.split('/')[-1])
-            plt.imshow(self.imgs_histograms_hsv[image_path], interpolation='nearest')
-        else:
-            plt.title(image_path.split('/')[-1] + '    segment ' + str(segment))
-            plt.imshow(self.imgs_segment_histograms_hsv[image_path][segment], interpolation='nearest')
-        plt.xlabel('Saturation bins')
-        plt.ylabel('Hue bins')
-        plt.show()
-        plt.clf()
 
     # sets the foreground of the image at image_path to segments
     def set_fg_segments(self, image_path, segments):
@@ -103,23 +91,31 @@ class Algorithms:
     def set_bg_segments(self, image_path, segments):
         self.imgs_background_segments[image_path] = segments
 
+    def compute_feature_vectors(self, mode='color'):
+        for img in self.images:
+            self.imgs_segment_feature_vectors[img] = [[] for i in range(len(self.imgs_segment_ids[img]))]
+            for segment in self.imgs_segment_ids[img]:
+                # If mode is color then feature vector is the flattened color histogram
+                if mode is 'color':
+                    self.imgs_segment_feature_vectors[img][segment] = self.imgs_segment_histograms_hsv_normalized[img][
+                        segment].flatten()
+                if mode is 'sift':
+                    self.imgs_segment_feature_vectors[img][segment] = self.imgs_segment_sift_descriptors[img][segment]
+                if mode is 'color+sift':
+                    color_feature = self.imgs_segment_histograms_hsv_normalized[img][segment].flatten()
+                    sift_feature = self.imgs_segment_sift_descriptors[img][segment]
+                    self.imgs_segment_feature_vectors[img][segment] = np.concatenate((color_feature, sift_feature))
+
     # To be used after superpixel segmentation and feature extraction.
     # Splits the images up in num_clusters using the given method.
-    def perform_clustering(self, num_clusters=2, method='spectral', type='histogram'):
+    def perform_clustering(self, num_clusters=2, method='kmeans'):
         data = []
+        # combine the feature vectors into one list
         for img in self.images:
-            if type is 'histogram':
-                for h in self.imgs_segment_histograms_hsv_normalized[img]:
-                    data.append(h.flatten())
-            elif type is 'sift':
-                for s in self.imgs_segment_sift_descriptors[img]:
-                    data.append(s)
-            elif type is 'both':
-                for i in range(len(self.imgs_segment_sift_descriptors[img])):
-                    h = self.imgs_segment_histograms_hsv_normalized[img][i].flatten()
-                    s = self.imgs_segment_sift_descriptors[img][i]
-                    data.append(np.concatenate((h, s)))
+            for segment in self.imgs_segment_ids[img]:
+                data.append(self.imgs_segment_feature_vectors[img][segment])
 
+        # find the indices of each part in the data list
         indices = np.cumsum([len(self.imgs_segment_ids[img]) for img in self.images])
 
         if method is 'spectral':
@@ -187,9 +183,9 @@ class Algorithms:
                         continue
                     # Create two edges between segment and its neighbor with cost based on histogram matching
                     hist_neighbor = self.imgs_segment_histograms_hsv_normalized[img][n].flatten()  # histogram for neighbor
-                    graph.add_edge(nodes[i], nodes[n],
-                                   20 - cv2.compareHist(hist, hist_neighbor, hist_comp_alg),
-                                   20 - cv2.compareHist(hist_neighbor, hist, hist_comp_alg))
+                    energy_forward = 20 - cv2.compareHist(hist, hist_neighbor, hist_comp_alg)
+                    energy_backward = 20 - cv2.compareHist(hist_neighbor, hist, hist_comp_alg)
+                    graph.add_edge(nodes[i], nodes[n], energy_forward, energy_backward)
 
             graph.maxflow()
 
@@ -201,11 +197,31 @@ class Algorithms:
     def get_segment_boundaries(self, img_path):
         return find_boundaries(self.imgs_segmentation[img_path])
 
+    # Returns a binary mask after cosegmentation of the image at image_path of the segments in segments
+    def get_coseg_mask(self, image_path, segments=None):
+        if segments is None:
+            segments = np.unique(self.imgs_cosegmented[image_path])
+        return np.isin(self.imgs_cosegmented[image_path], segments)
+
     # write the segmented images to specified folder
     def save_segmented_images(self, folder):
-        for image in self.imgs_segmentation:
-            slic.save_superpixel_image(self.imgs_float64[image], self.imgs_segmentation[image],
-                                       folder + '/' + image.split('/')[-1])
+        for img in self.imgs_segmentation:
+            slic.save_superpixel_image(self.imgs_float64[img], self.imgs_segmentation[img],
+                                       folder + '/' + img.split('/')[-1])
+
+    # Shows a plot of the histogram of the entire image at image_path or one of its segments
+    def show_histogram(self, image_path, segment=None):
+        if segment is None:
+            plt.title(image_path.split('/')[-1])
+            histogram = self.imgs_histograms_hsv[image_path]
+        else:
+            plt.title(image_path.split('/')[-1] + '    segment ' + str(segment))
+            histogram = self.imgs_segment_histograms_hsv_normalized[image_path][segment]
+        plt.imshow(histogram, interpolation='nearest')
+        plt.xlabel('Saturation bins')
+        plt.ylabel('Hue bins')
+        plt.show()
+        plt.clf()
 
     def plot_cosegmentations(self, folder_path):
         for img in self.images:
@@ -216,26 +232,20 @@ class Algorithms:
             superpixels = mark_boundaries(self.imgs_float64[img], self.imgs_segmentation[img])
             marking = cv2.imread(folder_path + 'markings/' + img.split('/')[-1])
             if marking is not None:
-                superpixels[marking[:, :, 0] != 255] = (1, 0, 0)
-                superpixels[marking[:, :, 2] != 255] = (0, 0, 1)
+                superpixels[marking[:, :, 0] < 200] = (1, 0, 0)
+                superpixels[marking[:, :, 2] < 200] = (0, 0, 1)
             plt.imshow(superpixels)
             plt.title("Superpixels + markings")
 
             plt.savefig("output/segmentation/" + img.split('/')[-1], bbox_inches='tight', dpi=96)
             plt.clf()
 
-    # Returns a binary mask after cosegmentation of the image at image_path of the segments in segments
-    def get_coseg_mask(self, image_path, segments=None):
-        if segments is None:
-            segments = np.unique(self.imgs_cosegmented[image_path])
-        return np.isin(self.imgs_cosegmented[image_path], segments)
-
 
 if __name__ == '__main__':
 
-    folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
     folder_path = '../images_icoseg/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
     folder_path = '../images_icoseg/025 Airshows-helicopter/'
+    folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
     image_paths = [folder_path + file for file in listdir(folder_path) if path.isfile(path.join(folder_path, file))]
 
     alg = Algorithms(image_paths)
@@ -249,8 +259,7 @@ if __name__ == '__main__':
 
     # Extract features
     alg.compute_sift(keypoint_size=32.0)
-
-    alg.compute_histograms_hsv(bins_H=10, bins_S=10)
+    alg.compute_histograms_hsv(bins_H=30, bins_S=1)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
@@ -258,13 +267,15 @@ if __name__ == '__main__':
     for image in image_paths:
         marking = cv2.imread(folder_path + 'markings/' + image.split('/')[-1])
         if marking is not None:
-            fg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 2] < 200])
-            bg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 0] < 200])
+            fg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 0] < 200])
+            bg_segments = np.unique(alg.imgs_segmentation[image][marking[:, :, 2] < 200])
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    # alg.perform_clustering(4, 'kmeans', 'both')
-    alg.perform_graph_cut()
+    alg.compute_feature_vectors(mode='color')
+
+    alg.perform_clustering(2, 'spectral')
+    # alg.perform_graph_cut()
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))
@@ -276,12 +287,10 @@ if __name__ == '__main__':
 
 # TODO
 
+# Graph-cut with sift
+#
+
 # Fix show histogram overwriting
 # Implement Sift and HOG into cosegmentation pipeline
-# Allow for unsupervised segmentation
 # Add support for different color spaces (see https://www.researchgate.net/publication/221453363_A_Comparison_Study_of_Different_Color_Spaces_in_Clustering_Based_Image_Segmentation)
-
-
-# TODO nice to have
-# SLIC superpixel labels containing pixels could be more efficient with numpy
 

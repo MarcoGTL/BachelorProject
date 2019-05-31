@@ -77,6 +77,7 @@ class Algorithms:
             gray = cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2GRAY)
             self.imgs_segment_sift_keypoints[img] = [cv2.KeyPoint(self.imgs_segment_centers[img][i][1], self.imgs_segment_centers[img][i][0], keypoint_size, -1) for i in self.imgs_segment_ids[img]]
             self.imgs_segment_sift_keypoints[img], self.imgs_segment_sift_descriptors[img] = sift.compute(gray, self.imgs_segment_sift_keypoints[img])
+            self.imgs_segment_sift_descriptors[img] = self.imgs_segment_sift_descriptors[img] / self.imgs_segment_sift_descriptors[img].sum()
 
     def compute_hog(self):
         for img in self.images:
@@ -101,7 +102,7 @@ class Algorithms:
                         segment].flatten()
                 if mode is 'sift':
                     self.imgs_segment_feature_vectors[img][segment] = self.imgs_segment_sift_descriptors[img][segment]
-                if mode is 'color+sift':
+                if mode is 'both':
                     color_feature = self.imgs_segment_histograms_hsv_normalized[img][segment].flatten()
                     sift_feature = self.imgs_segment_sift_descriptors[img][segment]
                     self.imgs_segment_feature_vectors[img][segment] = np.concatenate((color_feature, sift_feature))
@@ -135,21 +136,19 @@ class Algorithms:
     # To be used after superpixel segmentation and feature extraction
     # Segments the image using graph cut
     def perform_graph_cut(self, hist_comp_alg=cv2.HISTCMP_KL_DIV):
-        # group the foreground and background segments' histograms in one list
-        histograms_fg = [
-            np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_foreground_segments[img]]],
-                       axis=0) for img in self.images]
-        histograms_bg = [
-            np.sum([h.flatten() for h in self.imgs_segment_histograms_hsv[img][self.imgs_background_segments[img]]],
-                       axis=0) for img in self.images]
+        # group the foreground and background segments' feature vectors in one list
+        feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment in
+                       self.imgs_foreground_segments[img]]
+        feature_vectors_bg = [self.imgs_segment_feature_vectors[img][bg_segment] for img in self.images for bg_segment in
+                       self.imgs_background_segments[img]]
 
-        # combine the histograms for each image into one by summing them
-        histogram_fg = np.sum(histograms_fg, axis=0)
-        histogram_bg = np.sum(histograms_bg, axis=0)
+        # combine the feature vectors for into one by summing them
+        fv_fg = np.sum(feature_vectors_fg, axis=0)
+        fv_bg = np.sum(feature_vectors_bg, axis=0)
 
-        # normalize the histograms to get the final cumulative histograms
-        fg_hist = histogram_fg / histogram_fg.sum()
-        bg_hist = histogram_bg / histogram_bg.sum()
+        # normalize the feature vector
+        fv_fg = fv_fg / fv_fg.sum()
+        fv_bg = fv_bg / fv_bg.sum()
 
         # perform graph-cut for every image
         for img in self.images:
@@ -161,8 +160,7 @@ class Algorithms:
             nodes = graph.add_nodes(num_nodes)
 
             # Initialize match terms: energy of assigning node to foreground or background
-            for i, h in enumerate(self.imgs_segment_histograms_hsv_normalized[img]):
-                hist = h.flatten()
+            for i, fv in enumerate(self.imgs_segment_feature_vectors[img]):
                 energy_fg = 0
                 energy_bg = 0
                 if i in self.imgs_foreground_segments[img]:
@@ -171,20 +169,20 @@ class Algorithms:
                     energy_fg = 1000  # Node is bg -> set high energy for fg
                 else:
                     # set energy based on histogram matching
-                    energy_fg = cv2.compareHist(fg_hist, hist, hist_comp_alg)
-                    energy_bg = cv2.compareHist(bg_hist, hist, hist_comp_alg)
+                    energy_fg = cv2.compareHist(fv_fg, fv, hist_comp_alg)
+                    energy_bg = cv2.compareHist(fv_bg, fv, hist_comp_alg)
                 graph.add_tedge(nodes[i], energy_fg, energy_bg)
 
             # Initialize smoothness terms: energy between neighbors
             for i in range(len(self.imgs_segment_neighbors[img])):  # Loop over every segment
-                hist = self.imgs_segment_histograms_hsv_normalized[img][i].flatten()
+                fv = self.imgs_segment_feature_vectors[img][i]  # features for segment
                 for n in self.imgs_segment_neighbors[img][i]:  # For every neighbor of the segment
                     if (n < 0) or (n > num_nodes):
                         continue
                     # Create two edges between segment and its neighbor with cost based on histogram matching
-                    hist_neighbor = self.imgs_segment_histograms_hsv_normalized[img][n].flatten()  # histogram for neighbor
-                    energy_forward = 20 - cv2.compareHist(hist, hist_neighbor, hist_comp_alg)
-                    energy_backward = 20 - cv2.compareHist(hist_neighbor, hist, hist_comp_alg)
+                    fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # features for neighbor
+                    energy_forward = 20 - cv2.compareHist(fv, fv_neighbor, hist_comp_alg)
+                    energy_backward = 20 - cv2.compareHist(fv_neighbor, fv, hist_comp_alg)
                     graph.add_edge(nodes[i], nodes[n], energy_forward, energy_backward)
 
             graph.maxflow()
@@ -244,8 +242,9 @@ class Algorithms:
 if __name__ == '__main__':
 
     folder_path = '../images_icoseg/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
-    folder_path = '../images_icoseg/025 Airshows-helicopter/'
     folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
+    folder_path = '../images_icoseg/025 Airshows-helicopter/'
+
     image_paths = [folder_path + file for file in listdir(folder_path) if path.isfile(path.join(folder_path, file))]
 
     alg = Algorithms(image_paths)
@@ -272,10 +271,10 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.compute_feature_vectors(mode='color')
+    alg.compute_feature_vectors(mode='both')
 
-    alg.perform_clustering(2, 'spectral')
-    # alg.perform_graph_cut()
+    # alg.perform_clustering(2, 'spectral')
+    alg.perform_graph_cut()
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))

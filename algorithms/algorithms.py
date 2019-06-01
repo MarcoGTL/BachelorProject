@@ -2,22 +2,27 @@ import cv2
 import numpy as np
 import slic
 import clustering
+import features
 from os import listdir, path
 import maxflow
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
 from skimage.segmentation import find_boundaries
+from sklearn.mixture import GaussianMixture
 
 
 class Algorithms:
     def __init__(self, image_paths):
         self.images = image_paths                                # Relative paths to the images to be used
         # Each dictionary stores the data for each image using its image path as a key
-        self.imgs_float64 = dict()                               # Float64 representation of the image
+        self.imgs_bgr = dict()                               # Float64 representation of the image
         self.imgs_segmentation = dict()                          # Stores for each pixel its superpixel it belongs to
         self.imgs_segment_ids = dict()                           # List of superpixel indices
         self.imgs_segment_neighbors = dict()                     # Stores for each superpixel a list of its neighbors
         self.imgs_segment_centers = dict()
+
+        self.imgs_segment_color_feature = dict()
+
         self.imgs_segment_histograms_hsv = dict()                # Stores for each superpixel a hsv histogram
         self.imgs_segment_sift_keypoints = dict()
         self.imgs_segment_sift_descriptors = dict()
@@ -30,11 +35,11 @@ class Algorithms:
 
     # generate super-pixel segments for all images using SLIC
     def compute_superpixels_slic(self, num_segments, compactness=10.0, max_iter=10, sigma=0):
-        for image in self.images:
-            self.imgs_float64[image] = slic.read_image_as_float64(image)
-            self.imgs_segmentation[image] = slic.get_segmented_image(self.imgs_float64[image], num_segments,
-                                                                     compactness, max_iter, sigma)
-            self.imgs_segment_ids[image] = np.unique(self.imgs_segmentation[image])
+        for img in self.images:
+            self.imgs_bgr[img] = cv2.imread(img, flags=cv2.IMREAD_COLOR)
+            self.imgs_segmentation[img] = slic.get_segmented_image(self.imgs_bgr[img], num_segments,
+                                                                   compactness, max_iter, sigma)
+            self.imgs_segment_ids[img] = np.unique(self.imgs_segmentation[img])
 
     # compute the neighbor segments of each segment
     def compute_neighbors(self):
@@ -62,7 +67,7 @@ class Algorithms:
     # also generates normalized versions
     def compute_histograms_hsv(self, bins_H=20, bins_S=20):
         for img in self.images:
-            hsv = cv2.cvtColor(self.imgs_float64[img].astype('float32'), cv2.COLOR_BGR2HSV)
+            hsv = cv2.cvtColor(self.imgs_bgr[img].astype('float32'), cv2.COLOR_BGR2HSV)
             self.imgs_histograms_hsv[img] = np.float32(cv2.calcHist([hsv], [0, 1], None, [bins_H, bins_S], [0, 360, 0, 1]))
 
             self.imgs_segment_histograms_hsv[img] = \
@@ -94,18 +99,23 @@ class Algorithms:
 
     def compute_feature_vectors(self, mode='color'):
         for img in self.images:
-            self.imgs_segment_feature_vectors[img] = [[] for i in range(len(self.imgs_segment_ids[img]))]
+            self.imgs_segment_feature_vectors[img] = [[] for id in self.imgs_segment_ids[img]]
             for segment in self.imgs_segment_ids[img]:
                 # If mode is color then feature vector is the flattened color histogram
                 if mode is 'color':
-                    self.imgs_segment_feature_vectors[img][segment] = self.imgs_segment_histograms_hsv_normalized[img][
-                        segment].flatten()
-                if mode is 'sift':
-                    self.imgs_segment_feature_vectors[img][segment] = self.imgs_segment_sift_descriptors[img][segment]
-                if mode is 'both':
-                    color_feature = self.imgs_segment_histograms_hsv_normalized[img][segment].flatten()
-                    sift_feature = self.imgs_segment_sift_descriptors[img][segment]
-                    self.imgs_segment_feature_vectors[img][segment] = np.concatenate((color_feature, sift_feature))
+                    feature = features.get_color_feature(self.imgs_bgr[img], self.imgs_segmentation[img] == segment)
+                elif mode is 'hsv':
+                    feature = self.imgs_segment_histograms_hsv_normalized[img][segment].flatten()
+                elif mode is 'sift':
+                    feature = self.imgs_segment_sift_descriptors[img][segment]
+                elif mode is 'both':
+                    hsv_vector = self.imgs_segment_histograms_hsv_normalized[img][segment].flatten()
+                    sift_vector = self.imgs_segment_sift_descriptors[img][segment]
+                    feature = np.concatenate((hsv_vector, sift_vector))
+                else:
+                    print('Unknown feature mode: ' + mode)
+                    return
+                self.imgs_segment_feature_vectors[img][segment] = feature
 
     # To be used after superpixel segmentation and feature extraction.
     # Splits the images up in num_clusters using the given method.
@@ -132,6 +142,17 @@ class Algorithms:
             segmentation = segmentations[(indices[i - 1] % indices[-1]):indices[i]]
             # For each pixel in superpixel segmentation look up the cluster of its superpixel
             self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
+
+    def perform_graph_cut_GMM(self):
+        # group the foreground and background segments' feature vectors in one list
+        feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
+                              in self.imgs_foreground_segments[img]]
+        feature_vectors_bg = [self.imgs_segment_feature_vectors[img][bg_segment] for img in self.images for bg_segment
+                              in self.imgs_background_segments[img]]
+
+        GMM = GaussianMixture(6).fit(feature_vectors_fg)
+        print(GMM)
+        exit()
 
     # To be used after superpixel segmentation and feature extraction
     # Segments the image using graph cut
@@ -204,7 +225,7 @@ class Algorithms:
     # write the segmented images to specified folder
     def save_segmented_images(self, folder):
         for img in self.imgs_segmentation:
-            slic.save_superpixel_image(self.imgs_float64[img], self.imgs_segmentation[img],
+            slic.save_superpixel_image(self.imgs_bgr[img], self.imgs_segmentation[img],
                                        folder + '/' + img.split('/')[-1])
 
     # Shows a plot of the histogram of the entire image at image_path or one of its segments
@@ -227,7 +248,7 @@ class Algorithms:
             plt.title('segmentation')
             plt.imshow(self.imgs_cosegmented[img])
             plt.subplot(1, 2, 1), plt.xticks([]), plt.yticks([])
-            superpixels = mark_boundaries(self.imgs_float64[img], self.imgs_segmentation[img])
+            superpixels = mark_boundaries(self.imgs_bgr[img], self.imgs_segmentation[img])
             marking = cv2.imread(folder_path + 'markings/' + img.split('/')[-1])
             if marking is not None:
                 superpixels[marking[:, :, 0] < 200] = (1, 0, 0)
@@ -258,7 +279,8 @@ if __name__ == '__main__':
 
     # Extract features
     alg.compute_sift(keypoint_size=32.0)
-    alg.compute_histograms_hsv(bins_H=30, bins_S=1)
+    alg.compute_histograms_hsv(bins_H=20, bins_S=20)
+    alg.compute_feature_vectors(mode='color')
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
@@ -271,18 +293,13 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.compute_feature_vectors(mode='both')
-
-    # alg.perform_clustering(2, 'spectral')
-    alg.perform_graph_cut()
+    # alg.perform_clustering(6, 'kmeans')
+    alg.perform_graph_cut_GMM()
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))
 
     alg.plot_cosegmentations(folder_path)
-
-    # alg.show_histogram('images/bear1.jpg')
-    # alg.show_histogram('images/bear1.jpg', 1)
 
 # TODO
 

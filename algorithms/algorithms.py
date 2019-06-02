@@ -108,8 +108,7 @@ class Algorithms:
             # For each pixel in superpixel segmentation look up the cluster of its superpixel
             self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
 
-
-    def perform_graph_cut(self):
+    def perform_graph_cut(self, pairwise_term_scale=1.0):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
                               in self.imgs_foreground_segments[img]]
@@ -149,6 +148,16 @@ class Algorithms:
                 energy_fg = gmm_fg.score_samples([fv])
                 energy_bg = gmm_bg.score_samples([fv])
                 graph.add_tedge(nodes[i], energy_fg, energy_bg)
+
+            # Initialize smoothness terms: energy between neighbors
+            for id in self.imgs_segment_ids[img]:  # Loop over every segment
+                fv = self.imgs_segment_feature_vectors[img][id]  # feature vector for segment
+                for n in self.imgs_segment_neighbors[img][id]:  # For every neighbor of the segment
+                    # Create two edges between segment and its neighbor with cost based on histogram matching
+                    fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # feature vector of segment's neighbor
+                    energy_forward = - cv2.compareHist(fv, fv_neighbor, cv2.HISTCMP_KL_DIV) * pairwise_term_scale
+                    energy_backward = - cv2.compareHist(fv_neighbor, fv, cv2.HISTCMP_KL_DIV) * pairwise_term_scale
+                    graph.add_edge(nodes[id], nodes[n], energy_forward, energy_backward)
 
             graph.maxflow()
 
@@ -288,7 +297,7 @@ if __name__ == '__main__':
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))
 
     alg.plot_cosegmentations(folder_path)
-
+'''
     # Examples on how to create histograms
     image_bgr = alg.imgs_bgr[alg.images[0]]
     mask = alg.imgs_segmentation[alg.images[0]] == 0
@@ -305,7 +314,7 @@ if __name__ == '__main__':
     histograms.plot_histograms(hists_bgr)
 
     print(histograms.get_bgr_histogram(image_bgr, bins_b=3, bins_g=3, bins_r=3))
-
+'''
 # TODO
 
 # Graph-cut with sift

@@ -108,7 +108,7 @@ class Algorithms:
             self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
 
 
-    def perform_graph_cut_GMM(self):
+    def perform_graph_cut(self):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
                               in self.imgs_foreground_segments[img]]
@@ -159,7 +159,7 @@ class Algorithms:
 
     # To be used after superpixel segmentation and feature extraction
     # Segments the image using graph cut
-    def perform_graph_cut(self, hist_comp_alg=cv2.HISTCMP_KL_DIV):
+    def perform_graph_cut_old(self, hist_comp_alg=cv2.HISTCMP_KL_DIV):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment in
                        self.imgs_foreground_segments[img]]
@@ -295,7 +295,7 @@ if __name__ == '__main__':
             alg.set_bg_segments(image, bg_segments)
 
     # alg.perform_clustering(6, 'kmeans')
-    alg.perform_graph_cut_GMM()
+    alg.perform_graph_cut()
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))

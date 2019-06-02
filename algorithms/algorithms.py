@@ -3,6 +3,7 @@ import numpy as np
 import slic
 import clustering
 import features
+import histograms
 from os import listdir, path
 import maxflow
 import matplotlib.pyplot as plt
@@ -231,20 +232,6 @@ class Algorithms:
             slic.save_superpixel_image(self.imgs_bgr[img], self.imgs_segmentation[img],
                                        folder + '/' + img.split('/')[-1])
 
-    # Shows a plot of the histogram of the entire image at image_path or one of its segments
-    def show_histogram(self, image_path, segment=None):
-        if segment is None:
-            plt.title(image_path.split('/')[-1])
-            histogram = self.imgs_histograms_hsv[image_path]
-        else:
-            plt.title(image_path.split('/')[-1] + '    segment ' + str(segment))
-            histogram = self.imgs_segment_histograms_hsv_normalized[image_path][segment]
-        plt.imshow(histogram, interpolation='nearest')
-        plt.xlabel('Saturation bins')
-        plt.ylabel('Hue bins')
-        plt.show()
-        plt.clf()
-
     def plot_cosegmentations(self, folder_path):
         for img in self.images:
             plt.subplot(1, 2, 2), plt.xticks([]), plt.yticks([])
@@ -301,6 +288,23 @@ if __name__ == '__main__':
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))
 
     alg.plot_cosegmentations(folder_path)
+
+    # Examples on how to create histograms
+    image_bgr = alg.imgs_bgr[alg.images[0]]
+    mask = alg.imgs_segmentation[alg.images[0]] == 0
+
+    hist = histograms.get_hs_histogram(image_bgr=image_bgr, mask=None, bins_h=20, bins_s=20)
+    histograms.plot_hs_histogram(hist)
+
+    hist = histograms.get_hs_histogram(image_bgr=image_bgr, mask=mask, bins_h=20, bins_s=20)
+    histograms.plot_hs_histogram(hist)
+
+    hists_bgr = [histograms.get_b_histogram(image_bgr),
+                 histograms.get_g_histogram(image_bgr),
+                 histograms.get_r_histogram(image_bgr)]
+    histograms.plot_histograms(hists_bgr)
+
+    print(histograms.get_bgr_histogram(image_bgr, bins_b=3, bins_g=3, bins_r=3))
 
 # TODO
 

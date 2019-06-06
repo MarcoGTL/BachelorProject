@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
 from skimage.segmentation import find_boundaries
 from sklearn.mixture import GaussianMixture
+from scipy.stats import entropy
 
 
 class Algorithms:
@@ -24,6 +25,13 @@ class Algorithms:
         self.imgs_segment_feature_vectors = dict()
         self.imgs_foreground_segments = dict.fromkeys(image_paths, [])  # List of foreground superpixels
         self.imgs_background_segments = dict.fromkeys(image_paths, [])  # List of background superpixels
+        self.gmm_fg = None
+        self.gmm_bg = None
+        self.gmm_fg_bic = 0
+        self.gmm_bg_bic = 0
+        self.imgs_uncertainties_node = dict()
+        self.imgs_uncertainties_edge = dict()
+        self.imgs_uncertainties_graph_cut = dict()
         self.imgs_cosegmented = dict()            # Stores for each pixel its segment it belongs to after cosegmentation
 
     # generate super-pixel segments for all images using SLIC
@@ -47,6 +55,7 @@ class Algorithms:
                     self.imgs_segment_neighbors[img][neighbor_edges[1][i]].append(neighbor_edges[0][i])
 
     # compute the center of each segment
+    # TODO this may be outside of the superpixel for odd shapes
     def compute_centers(self):
         for img in self.images:
             self.imgs_segment_centers[img] = []
@@ -67,7 +76,7 @@ class Algorithms:
     def compute_feature_vectors(self, mode='color', bins_h=5, bins_s=3, kp_size=32.0):
         # TODO change order of loop and if statements
         for img in self.images:
-            self.imgs_segment_feature_vectors[img] = [[] for id in self.imgs_segment_ids[img]]
+            self.imgs_segment_feature_vectors[img] = [0 for id in self.imgs_segment_ids[img]]
             for segment in self.imgs_segment_ids[img]:
                 # If mode is color then feature vector is the flattened color histogram
                 if mode is 'color':
@@ -83,7 +92,7 @@ class Algorithms:
                 self.imgs_segment_feature_vectors[img][segment] = feature
 
     # To be used after superpixel segmentation and feature extraction.
-    # Splits the images up in num_clusters using the given method.
+    # Splits superpixels up up in num_clusters using the given method.
     def perform_clustering(self, num_clusters=2, method='kmeans'):
         data = []
         # combine the feature vectors into one list
@@ -108,7 +117,8 @@ class Algorithms:
             # For each pixel in superpixel segmentation look up the cluster of its superpixel
             self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
 
-    def perform_graph_cut(self, pairwise_term_scale=1.0):
+    # Fits several Gaussian Mixture Model to the foreground and background superpixels depending on the range given and chooses the best fit
+    def compute_gmm(self, num_components_range=range(5, 9)):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
                               in self.imgs_foreground_segments[img]]
@@ -117,22 +127,37 @@ class Algorithms:
 
         def find_best_gmm(X):
             lowest_bic = np.infty
-            bic = []
-            cv_types = ['spherical', 'tied', 'diag', 'full']
-            for cv_type in cv_types:
-                for n_components in range(5, 9):
-                    # Fit a Gaussian mixture with EM
-                    gmm = GaussianMixture(n_components=n_components, covariance_type=cv_type)
-                    gmm.fit(X)
-                    bic.append(gmm.bic(np.asarray(X, dtype=np.float32)))
-                    if bic[-1] < lowest_bic:
-                        lowest_bic = bic[-1]
-                        best_gmm = gmm
-            return best_gmm
+            for n_components in num_components_range:
+                # Fit a Gaussian mixture with EM
+                gmm = GaussianMixture(n_components=n_components, covariance_type='full', n_init=10)
+                gmm.fit(X)
+                bic = gmm.bic(np.asarray(X, dtype=np.float32))
+                if bic < lowest_bic:
+                    lowest_bic = bic
+                    best_gmm = gmm
+            print(lowest_bic)
+            return best_gmm, lowest_bic
 
-        gmm_fg = find_best_gmm(feature_vectors_fg)
-        gmm_bg = find_best_gmm(feature_vectors_bg)
+        self.gmm_fg, self.gmm_fg_bic = find_best_gmm(feature_vectors_fg)
+        self.gmm_bg, self.gmm_bg_bic = find_best_gmm(feature_vectors_bg)
 
+    def compute_node_uncertainties(self):
+        for img in self.images:
+            self.imgs_uncertainties_node[img] = np.zeros(len(self.imgs_segment_ids[img]))
+            fg_likelihoods = self.gmm_fg.predict_proba(self.imgs_segment_feature_vectors[img])
+            bg_likelihoods = self.gmm_bg.predict_proba(self.imgs_segment_feature_vectors[img])
+            # Form 2-class distribution
+            likelihoods = np.concatenate((fg_likelihoods, bg_likelihoods), axis=1)
+            # Normalize the likelihoods
+            likelihoods = likelihoods / likelihoods.sum(axis=1)[:, np.newaxis]
+            # Compute the entropies of the distributions as the node uncertainties
+            self.imgs_uncertainties_node[img] = [entropy(dist) for dist in likelihoods]
+
+    def compute_edge_uncertainties(self):
+        # TODO
+        print('Not yet implemented')
+
+    def perform_graph_cut(self, pairwise_term_scale=1.0):
         # perform graph-cut for every image
         for img in self.images:
             # Create a graph of N nodes with an estimate of 5 edges per node
@@ -142,12 +167,16 @@ class Algorithms:
             # Add the nodes
             nodes = graph.add_nodes(num_nodes)
 
+            # Initialize uncertainties array
+            self.imgs_uncertainties_graph_cut[img] = np.zeros(len(self.imgs_segment_ids[img]))
+
             # Initialize match terms: energy of assigning node to foreground or background
             for i, fv in enumerate(self.imgs_segment_feature_vectors[img]):
                 # set energy based on weighted log probability
-                energy_fg = gmm_fg.score_samples([fv])
-                energy_bg = gmm_bg.score_samples([fv])
+                energy_fg = self.gmm_fg.score_samples([fv])[0]
+                energy_bg = self.gmm_bg.score_samples([fv])[0]
                 graph.add_tedge(nodes[i], energy_fg, energy_bg)
+                self.imgs_uncertainties_graph_cut[img][i] = abs(energy_fg - energy_bg)
 
             # Initialize smoothness terms: energy between neighbors
             for id in self.imgs_segment_ids[img]:  # Loop over every segment
@@ -290,6 +319,9 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
+    alg.compute_gmm(range(5, 9))
+    alg.compute_node_uncertainties()
+
     # alg.perform_clustering(6, 'kmeans')
     alg.perform_graph_cut()
 
@@ -317,8 +349,10 @@ if __name__ == '__main__':
 '''
 # TODO
 
-# Graph-cut with sift
-#
+# Add initialization function for dictionaries
+# Uncertainty-based cues
+# More features
+# Smoothness term
 
 # Fix show histogram overwriting
 # Implement Sift and HOG into cosegmentation pipeline

@@ -135,7 +135,6 @@ class Algorithms:
                 if bic < lowest_bic:
                     lowest_bic = bic
                     best_gmm = gmm
-            print(lowest_bic)
             return best_gmm, lowest_bic
 
         self.gmm_fg, self.gmm_fg_bic = find_best_gmm(feature_vectors_fg)
@@ -157,7 +156,7 @@ class Algorithms:
         # TODO
         print('Not yet implemented')
 
-    def perform_graph_cut(self, pairwise_term_scale=1.0):
+    def perform_graph_cut(self, pairwise_term_scale=10.0, scale_parameter=1.0):
         # perform graph-cut for every image
         for img in self.images:
             # Create a graph of N nodes with an estimate of 5 edges per node
@@ -170,13 +169,21 @@ class Algorithms:
             # Initialize uncertainties array
             self.imgs_uncertainties_graph_cut[img] = np.zeros(len(self.imgs_segment_ids[img]))
 
+            max_energy = -np.infty
+
             # Initialize match terms: energy of assigning node to foreground or background
             for i, fv in enumerate(self.imgs_segment_feature_vectors[img]):
                 # set energy based on weighted log probability
                 energy_fg = self.gmm_fg.score_samples([fv])[0]
                 energy_bg = self.gmm_bg.score_samples([fv])[0]
                 graph.add_tedge(nodes[i], energy_fg, energy_bg)
+                if max_energy < abs(energy_fg):
+                    max_energy = abs(energy_fg)
+                if max_energy < abs(energy_bg):
+                    max_energy = abs(energy_bg)
                 self.imgs_uncertainties_graph_cut[img][i] = abs(energy_fg - energy_bg)
+
+            pairwise_term_scale = max_energy
 
             # Initialize smoothness terms: energy between neighbors
             for id in self.imgs_segment_ids[img]:  # Loop over every segment
@@ -184,9 +191,9 @@ class Algorithms:
                 for n in self.imgs_segment_neighbors[img][id]:  # For every neighbor of the segment
                     # Create two edges between segment and its neighbor with cost based on histogram matching
                     fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # feature vector of segment's neighbor
-                    energy_forward = - cv2.compareHist(fv, fv_neighbor, cv2.HISTCMP_KL_DIV) * pairwise_term_scale
-                    energy_backward = - cv2.compareHist(fv_neighbor, fv, cv2.HISTCMP_KL_DIV) * pairwise_term_scale
-                    graph.add_edge(nodes[id], nodes[n], energy_forward, energy_backward)
+                    energy_forward = np.e ** (- scale_parameter * abs(cv2.compareHist(fv, fv_neighbor, cv2.HISTCMP_KL_DIV)))
+                    energy_backward = np.e ** (- scale_parameter * abs(cv2.compareHist(fv_neighbor, fv, cv2.HISTCMP_KL_DIV)))
+                    graph.add_edge(nodes[id], nodes[n], pairwise_term_scale * energy_forward, pairwise_term_scale * energy_backward)
 
             graph.maxflow()
 
@@ -195,65 +202,6 @@ class Algorithms:
             # Get a bool mask of the pixels for a given selection of superpixel IDs
             self.imgs_cosegmented[img] = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True,
                                                   False)
-
-    # To be used after superpixel segmentation and feature extraction
-    # Segments the image using graph cut
-    def perform_graph_cut_old(self, hist_comp_alg=cv2.HISTCMP_KL_DIV):
-        # group the foreground and background segments' feature vectors in one list
-        feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment in
-                       self.imgs_foreground_segments[img]]
-        feature_vectors_bg = [self.imgs_segment_feature_vectors[img][bg_segment] for img in self.images for bg_segment in
-                       self.imgs_background_segments[img]]
-
-        # combine the feature vectors for into one by summing them
-        fv_fg = np.sum(feature_vectors_fg, axis=0)
-        fv_bg = np.sum(feature_vectors_bg, axis=0)
-
-        # normalize the feature vector
-        fv_fg = fv_fg / fv_fg.sum()
-        fv_bg = fv_bg / fv_bg.sum()
-
-        # perform graph-cut for every image
-        for img in self.images:
-            # Create a graph of N nodes with an estimate of 5 edges per node
-            num_nodes = len(self.imgs_segment_ids[img])
-            graph = maxflow.Graph[float](num_nodes, num_nodes * 5)
-
-            # Add the nodes
-            nodes = graph.add_nodes(num_nodes)
-
-            # Initialize match terms: energy of assigning node to foreground or background
-            for i, fv in enumerate(self.imgs_segment_feature_vectors[img]):
-                energy_fg = 0
-                energy_bg = 0
-                if i in self.imgs_foreground_segments[img]:
-                    energy_bg = 1000  # Node is fg -> set high energy for bg
-                elif i in self.imgs_background_segments[img]:
-                    energy_fg = 1000  # Node is bg -> set high energy for fg
-                else:
-                    # set energy based on histogram matching
-                    energy_fg = cv2.compareHist(fv_fg, fv, hist_comp_alg)
-                    energy_bg = cv2.compareHist(fv_bg, fv, hist_comp_alg)
-                graph.add_tedge(nodes[i], energy_fg, energy_bg)
-
-            # Initialize smoothness terms: energy between neighbors
-            for i in range(len(self.imgs_segment_neighbors[img])):  # Loop over every segment
-                fv = self.imgs_segment_feature_vectors[img][i]  # features for segment
-                for n in self.imgs_segment_neighbors[img][i]:  # For every neighbor of the segment
-                    if (n < 0) or (n > num_nodes):
-                        continue
-                    # Create two edges between segment and its neighbor with cost based on histogram matching
-                    fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # features for neighbor
-                    energy_forward = 20 - cv2.compareHist(fv, fv_neighbor, hist_comp_alg)
-                    energy_backward = 20 - cv2.compareHist(fv_neighbor, fv, hist_comp_alg)
-                    graph.add_edge(nodes[i], nodes[n], energy_forward, energy_backward)
-
-            graph.maxflow()
-
-            graph_cut = graph.get_grid_segments(nodes)
-
-            # Get a bool mask of the pixels for a given selection of superpixel IDs
-            self.imgs_cosegmented[img] = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True, False)
 
     def get_segment_boundaries(self, img_path):
         return find_boundaries(self.imgs_segmentation[img_path])
@@ -290,9 +238,9 @@ class Algorithms:
 
 if __name__ == '__main__':
 
-    folder_path = '../images_icoseg/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
-    folder_path = '../images_icoseg/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
-    folder_path = '../images_icoseg/025 Airshows-helicopter/'
+    folder_path = '../icoseg_images/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
+    folder_path = '../icoseg_images/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
+    folder_path = '../icoseg_images/025 Airshows-helicopter/'
 
     image_paths = [folder_path + file for file in listdir(folder_path) if path.isfile(path.join(folder_path, file))]
 
@@ -320,6 +268,11 @@ if __name__ == '__main__':
             alg.set_bg_segments(image, bg_segments)
 
     alg.compute_gmm(range(5, 9))
+    print('Foreground GMM: ', alg.gmm_fg)
+    print('BIC: ', alg.gmm_fg_bic)
+    print('Background GMM:', alg.gmm_bg)
+    print('BIC: ', alg.gmm_bg_bic)
+
     alg.compute_node_uncertainties()
 
     # alg.perform_clustering(6, 'kmeans')

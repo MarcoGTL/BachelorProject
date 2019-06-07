@@ -63,7 +63,7 @@ class Algorithms:
                 # Retrieve indices of segment i
                 indices = np.where(self.imgs_segmentation[img] == i)
                 # Center is mean of indices
-                self.imgs_segment_centers[img].append((np.mean(indices[0]), np.mean(indices[1])))
+                self.imgs_segment_centers[img].append((np.median(indices[0]), np.median(indices[1])))
 
     # sets the foreground of the image at image_path to segments
     def set_fg_segments(self, image_path, segments):
@@ -156,7 +156,7 @@ class Algorithms:
         # TODO
         print('Not yet implemented')
 
-    def perform_graph_cut(self, pairwise_term_scale=10.0, scale_parameter=1.0):
+    def perform_graph_cut(self, pairwise_term_scale=-np.infty, scale_parameter=1.0):
         # perform graph-cut for every image
         for img in self.images:
             # Create a graph of N nodes with an estimate of 5 edges per node
@@ -169,7 +169,11 @@ class Algorithms:
             # Initialize uncertainties array
             self.imgs_uncertainties_graph_cut[img] = np.zeros(len(self.imgs_segment_ids[img]))
 
-            max_energy = -np.infty
+            # If no scale is given initialize it as -infinity and set it to the largest unary term energy
+            if pairwise_term_scale == -np.infty:
+                compute_scale = True
+            else:
+                compute_scale = False
 
             # Initialize match terms: energy of assigning node to foreground or background
             for i, fv in enumerate(self.imgs_segment_feature_vectors[img]):
@@ -177,13 +181,14 @@ class Algorithms:
                 energy_fg = self.gmm_fg.score_samples([fv])[0]
                 energy_bg = self.gmm_bg.score_samples([fv])[0]
                 graph.add_tedge(nodes[i], energy_fg, energy_bg)
-                if max_energy < abs(energy_fg):
-                    max_energy = abs(energy_fg)
-                if max_energy < abs(energy_bg):
-                    max_energy = abs(energy_bg)
+                # Initialize this superpixels graph cut uncertainty as the difference in fg and bg energy
                 self.imgs_uncertainties_graph_cut[img][i] = abs(energy_fg - energy_bg)
-
-            pairwise_term_scale = max_energy
+                # Set pairwise_term_scale to largest energy
+                if compute_scale:
+                    if pairwise_term_scale < abs(energy_fg):
+                        pairwise_term_scale = abs(energy_fg)
+                    if pairwise_term_scale < abs(energy_bg):
+                        pairwise_term_scale = abs(energy_bg)
 
             # Initialize smoothness terms: energy between neighbors
             for id in self.imgs_segment_ids[img]:  # Loop over every segment
@@ -191,9 +196,9 @@ class Algorithms:
                 for n in self.imgs_segment_neighbors[img][id]:  # For every neighbor of the segment
                     # Create two edges between segment and its neighbor with cost based on histogram matching
                     fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # feature vector of segment's neighbor
-                    energy_forward = np.e ** (- scale_parameter * abs(cv2.compareHist(fv, fv_neighbor, cv2.HISTCMP_KL_DIV)))
-                    energy_backward = np.e ** (- scale_parameter * abs(cv2.compareHist(fv_neighbor, fv, cv2.HISTCMP_KL_DIV)))
-                    graph.add_edge(nodes[id], nodes[n], pairwise_term_scale * energy_forward, pairwise_term_scale * energy_backward)
+                    energy_forward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(cv2.compareHist(fv, fv_neighbor, cv2.HISTCMP_KL_DIV))))
+                    energy_backward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(cv2.compareHist(fv_neighbor, fv, cv2.HISTCMP_KL_DIV))))
+                    graph.add_edge(nodes[id], nodes[n], energy_forward, energy_backward)
 
             graph.maxflow()
 
@@ -254,7 +259,7 @@ if __name__ == '__main__':
     # alg.save_segmented_images('output/superpixel')
 
     # Extract features
-    alg.compute_feature_vectors(mode='color', bins_h=5, bins_s=3, kp_size=32.0)
+    alg.compute_feature_vectors(mode='sift', bins_h=5, bins_s=3, kp_size=32.0)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and

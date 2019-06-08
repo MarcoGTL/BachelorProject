@@ -3,8 +3,14 @@ from PyQt5 import QtGui
 from PyQt5 import QtCore
 from mainui import designer
 from algorithms import algorithms
+from algorithms import MDS
 import os
+import sys
+import numpy as np
+import pyqtgraph as pg
 from skimage.segmentation import find_boundaries
+
+# add heat map, eraser, mds with some way of linking
 
 colors = [[0, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255],
           [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0], [128, 0, 128],
@@ -30,6 +36,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.kmeansButton.clicked.connect(self.kmeans)
         self.spectralButton.clicked.connect(self.spectral)
         self.clusteringBox.currentIndexChanged.connect(self.clustering_options)
+        self.extractionBox.currentIndexChanged.connect(self.extraction_options)
+        self.graph_button.clicked.connect(self.create_graph)
         self.bwRadioButton.clicked.connect(self.draw_results)
         self.bRadioButton.clicked.connect(self.draw_results)
 
@@ -49,9 +57,10 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         self.fgRadioButton.setChecked(True)
         self.bwRadioButton.setChecked(True)
+        self.siftlabel.setHidden(True)
+        self.siftSpinBox.setHidden(True)
         self.fgRadioButton.clicked.connect(self.currentPencil)
         self.bgRadioButton.clicked.connect(self.currentPencil)
-        self.eRadioButton.clicked.connect(self.currentPencil)
 
         self.point = (-1, -1)
         self.image_paths = []
@@ -160,9 +169,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
         if y < 0 or x < 0:
             return
-        if self.histogramCheckBox.isChecked():
-            self.algs.show_histogram(self.image_path, self.algs.imgs_segmentation[self.image_path][y][x])
-            return
 
         self.savePoint(x, y)
         self.point = (x, y)
@@ -240,7 +246,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             for x in self.background[self.image_path]:
                 qpbounds.drawPoint(x[0], x[1])
 
-            qpbounds.setPen(QtGui.QPen(QtCore.Qt.red,1))
+            qpbounds.setPen(QtGui.QPen(QtCore.Qt.red, 1))
             for x in self.foreground[self.image_path]:
                 qpbounds.drawPoint(x[0], x[1])
 
@@ -269,7 +275,17 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.kmeansButton.setDisabled(True)
 
     def set_histograms(self):
-        self.algs.compute_histograms_hsv(self.HspinBox.value(), self.SSpinBox.value())
+        if self.extractionBox.currentIndex() == 0:
+            self.algs.compute_feature_vectors('color', self.HspinBox.value(), self.SSpinBox.value(),
+                                              self.siftSpinBox.value())
+        elif self.extractionBox.currentIndex() == 1:
+            self.algs.compute_feature_vectors('hsv', self.HspinBox.value(), self.SSpinBox.value(),
+                                              self.siftSpinBox.value())
+        elif self.extractionBox.currentIndex() == 2:
+            self.algs.compute_centers()
+            self.algs.compute_feature_vectors('sift', self.HspinBox.value(), self.SSpinBox.value(),
+                                              self.siftSpinBox.value())
+
         self.markingsButton.setEnabled(True)
         self.histogramCheckBox.setEnabled(True)
         self.graphcomputeButton.setDisabled(True)
@@ -294,6 +310,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.graphcomputeButton.setEnabled(True)
         self.spectralButton.setEnabled(True)
         self.kmeansButton.setEnabled(True)
+
     def clear_markings(self):
         self.foreground[self.image_path].clear()
         self.background[self.image_path].clear()
@@ -332,7 +349,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         print(lengthy, lengthx)
         while i < lengthy:
             while j < lengthx:
-                qp.setPen(QtGui.QColor(colors[results[i][j]][0],colors[results[i][j]][1], colors[results[i][j]][2]))
+                qp.setPen(QtGui.QColor(colors[results[i][j]][0], colors[results[i][j]][1], colors[results[i][j]][2]))
                 qp.drawPoint(j, i)
                 j = j + 1
             j = 0
@@ -350,7 +367,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
         elif self.bRadioButton.isChecked():
             qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 3))
-            results = [i * 255 for i in find_boundaries(results)]
+            results = find_boundaries(results)
         i = 0
         j = 0
         lengthy = len(results)
@@ -358,7 +375,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         print(lengthy, lengthx)
         while i < lengthy:
             while j < lengthx:
-                if results[i][j] == 255:
+                if results[i][j] == 1:
                     qp.drawPoint(j, i)
                 j = j + 1
             j = 0
@@ -399,14 +416,57 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.kmeansFrame.setHidden(True)
             self.spectralFrame.setHidden(True)
             self.graphFrame.setVisible(True)
-        if self.clusteringBox.currentIndex() == 1:
+        elif self.clusteringBox.currentIndex() == 1:
             self.kmeansFrame.setVisible(True)
             self.spectralFrame.setHidden(True)
             self.graphFrame.setHidden(True)
-        if self.clusteringBox.currentIndex() == 2:
+        elif self.clusteringBox.currentIndex() == 2:
             self.kmeansFrame.setHidden(True)
             self.spectralFrame.setVisible(True)
             self.graphFrame.setHidden(True)
+
+    def extraction_options(self):
+        if self.extractionBox.currentIndex() == 0 or self.extractionBox.currentIndex() == 1:
+            x = True
+        elif self.extractionBox.currentIndex() == 2:
+            x = False
+        self.siftlabel.setHidden(x)
+        self.siftSpinBox.setHidden(x)
+        self.colorlabel1.setHidden(not x)
+        self.colorlabel2.setHidden(not x)
+        self.SSpinBox.setHidden(not x)
+        self.HspinBox.setHidden(not x)
+
+    def create_graph(self):
+        pg.setConfigOption('background', 'w')
+        pg.setConfigOption('foreground', 'k')
+        data = MDS.mds_transform(self.algs.imgs_segment_feature_vectors[self.image_path])
+        print(data)
+        # Create the main application instance
+
+        # Create the view
+        self.view = pg.PlotWidget()
+        self.view.resize(800, 600)
+        self.view.setWindowTitle('Scatter plot using pyqtgraph with PyQT5')
+        self.view.setAspectLocked(True)
+        self.view.show()
+
+        # Create the scatter plot and add it to the view
+        scatter = pg.ScatterPlotItem(pen=pg.mkPen(width=1, color='r'), symbol='o', size=5)
+        scatter.sigClicked.connect(self.on_click_graph)
+        self.view.addItem(scatter)
+
+        # Convert data array into a list of dictionaries with the x,y-coordinates
+        pos = [{'pos': x} for x in data]
+        print(pos)
+        scatter.setData(pos)
+
+    def on_click_graph(self, graph, points):
+        for point in points:
+            print(point.pos()[0], point.pos()[1])
+            #find out what superpixelthis belongs tho
+            # change markings from yellow to green in superpixel screen
+
 
 
 if __name__ == '__main__':

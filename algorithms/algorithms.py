@@ -118,7 +118,7 @@ class Algorithms:
             self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
 
     # Fits several Gaussian Mixture Model to the foreground and background superpixels depending on the range given and chooses the best fit
-    def compute_gmm(self, num_components_range=range(5, 9)):
+    def compute_gmm(self, n_init=10, num_components_range=range(5, 9)):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
                               in self.imgs_foreground_segments[img]]
@@ -259,7 +259,7 @@ if __name__ == '__main__':
     # alg.save_segmented_images('output/superpixel')
 
     # Extract features
-    alg.compute_feature_vectors(mode='sift', bins_h=5, bins_s=3, kp_size=32.0)
+    alg.compute_feature_vectors(mode='color', bins_h=5, bins_s=3, kp_size=32.0)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
@@ -272,7 +272,7 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.compute_gmm(range(5, 9))
+    alg.compute_gmm(n_init=10, num_components_range=range(5, 9))
     print('Foreground GMM: ', alg.gmm_fg)
     print('BIC: ', alg.gmm_fg_bic)
     print('Background GMM:', alg.gmm_bg)
@@ -281,7 +281,7 @@ if __name__ == '__main__':
     alg.compute_node_uncertainties()
 
     # alg.perform_clustering(6, 'kmeans')
-    alg.perform_graph_cut()
+    alg.perform_graph_cut(pairwise_term_scale=-np.infty, scale_parameter=1.0)
 
     for image in image_paths:
         cv2.imwrite('output/masks/'+image.split('/')[-1], np.uint8(alg.get_coseg_mask(image, 0)*255))

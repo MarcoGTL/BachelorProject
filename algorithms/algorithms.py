@@ -36,7 +36,7 @@ class Algorithms:
         self.imgs_uncertainties_graph_cut = dict()
         self.imgs_cosegmented = dict()            # Stores for each pixel its segment it belongs to after cosegmentation
 
-    # generate super-pixel segments for all images using SLIC
+    # generate superpixel segments for all images using SLIC
     def compute_superpixels_slic(self, num_segments, compactness=10.0, max_iter=10, sigma=0):
         for img in self.images:
             self.imgs_bgr[img] = cv2.imread(img, flags=cv2.IMREAD_COLOR)
@@ -44,20 +44,24 @@ class Algorithms:
                                                                    compactness, max_iter, sigma)
             self.imgs_segment_ids[img] = np.unique(self.imgs_segmentation[img])
 
-    # compute the neighbor segments of each segment
+    # compute the neighbor superpixels for each superpixel
     def compute_neighbors(self):
         for img in self.images:
-            vs_right = np.vstack([self.imgs_segmentation[img][:, :-1].ravel(), self.imgs_segmentation[img][:, 1:].ravel()])
-            vs_below = np.vstack([self.imgs_segmentation[img][:-1, :].ravel(), self.imgs_segmentation[img][1:, :].ravel()])
-            neighbor_edges = np.unique(np.hstack([vs_right, vs_below]), axis=1)
-            self.imgs_segment_neighbors[img] = [[] for i in self.imgs_segment_ids[img]]
-            for i in range(len(neighbor_edges[0])):
-                if neighbor_edges[0][i] != neighbor_edges[1][i]:
-                    self.imgs_segment_neighbors[img][neighbor_edges[0][i]].append(neighbor_edges[1][i])
-                    self.imgs_segment_neighbors[img][neighbor_edges[1][i]].append(neighbor_edges[0][i])
+            self.imgs_segment_neighbors[img] = [set() for i in self.imgs_segment_ids[img]]
+            for row in range(len(self.imgs_segmentation[img])-1):
+                for column in range(len(self.imgs_segmentation[img][0])-1):
+                    current = self.imgs_segmentation[img][row][column]  # superpixel of current pixel
+                    right = self.imgs_segmentation[img][row][column+1]  # superpixel of pixel right of current
+                    below = self.imgs_segmentation[img][row+1][column]  # superpixel of pixel below current
+                    if current != right:
+                        self.imgs_segment_neighbors[img][current].add(right)
+                        self.imgs_segment_neighbors[img][right].add(current)
+                    if current != below:
+                        self.imgs_segment_neighbors[img][current].add(below)
+                        self.imgs_segment_neighbors[img][below].add(current)
 
-    # compute the center of each segment
-    # TODO this may be outside of the superpixel for odd shapes
+    # compute the center of each superpixel
+    # this method may yield locations outside superpixels with odd shapes
     def compute_centers(self):
         for img in self.images:
             self.imgs_segment_centers[img] = []
@@ -189,43 +193,53 @@ class Algorithms:
             # Add the nodes
             nodes = graph.add_nodes(num_nodes)
 
-            # Initialize uncertainties array
-            self.imgs_uncertainties_graph_cut[img] = np.zeros(len(self.imgs_segment_ids[img]))
-
             # If no scale is given initialize it as -infinity and set it to the largest unary term energy
             if pairwise_term_scale == -np.infty:
                 compute_scale = True
             else:
                 compute_scale = False
 
+            energies_fg = np.zeros(len(self.imgs_segment_ids[img]))
+            energies_bg = np.zeros(len(self.imgs_segment_ids[img]))
+            edges = [dict() for i in self.imgs_segment_ids[img]]
+
             # Initialize match terms: energy of assigning node to foreground or background
             for i, fv in enumerate(self.imgs_segment_feature_vectors[img]):
                 # set energy based on weighted log probability
-                energy_fg = self.gmm_fg.score_samples([fv])[0]
-                energy_bg = self.gmm_bg.score_samples([fv])[0]
-                graph.add_tedge(nodes[i], energy_fg, energy_bg)
-                # Initialize this superpixels graph cut uncertainty as the difference in fg and bg energy
-                self.imgs_uncertainties_graph_cut[img][i] = abs(energy_fg - energy_bg)
+                energies_fg[i] = self.gmm_fg.score_samples([fv])[0]
+                energies_bg[i] = self.gmm_bg.score_samples([fv])[0]
+                graph.add_tedge(nodes[i], energies_fg[i], energies_bg[i])
                 # Set pairwise_term_scale to largest energy
                 if compute_scale:
-                    if pairwise_term_scale < abs(energy_fg):
-                        pairwise_term_scale = abs(energy_fg)
-                    if pairwise_term_scale < abs(energy_bg):
-                        pairwise_term_scale = abs(energy_bg)
+                    if pairwise_term_scale < abs(energies_fg[i]):
+                        pairwise_term_scale = abs(energies_fg[i])
+                    if pairwise_term_scale < abs(energies_bg[i]):
+                        pairwise_term_scale = abs(energies_bg[i])
 
             # Initialize smoothness terms: energy between neighbors
-            for id in self.imgs_segment_ids[img]:  # Loop over every segment
-                fv = self.imgs_segment_feature_vectors[img][id]  # feature vector for segment
-                for n in self.imgs_segment_neighbors[img][id]:  # For every neighbor of the segment
+            for i in self.imgs_segment_ids[img]:  # Loop over every segment
+                fv = self.imgs_segment_feature_vectors[img][i]  # feature vector for segment
+                for nbr in self.imgs_segment_neighbors[img][i]:  # For every neighbor of the segment
                     # Create two edges between segment and its neighbor with cost based on histogram matching
-                    fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # feature vector of segment's neighbor
-                    energy_forward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv, fv_neighbor))))
-                    energy_backward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv_neighbor, fv))))
-                    graph.add_edge(nodes[id], nodes[n], energy_forward, energy_backward)
+                    fv_neighbor = self.imgs_segment_feature_vectors[img][nbr]  # feature vector of segment's neighbor
+                    edges[i][nbr] = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv, fv_neighbor))))
+                    edges[nbr][i] = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv_neighbor, fv))))
+                    graph.add_edge(nodes[i], nodes[nbr], edges[i][nbr], edges[nbr][i])
 
             graph.maxflow()
 
             graph_cut = graph.get_grid_segments(nodes)
+
+            # Initialize uncertainties array
+            self.imgs_uncertainties_graph_cut[img] = np.zeros(len(self.imgs_segment_ids[img]))
+
+            # Compute uncertainties of the graph-cut as the difference in energy between the assignments
+            for i in self.imgs_segment_ids[img]:
+                energy_difference = abs(energies_fg[i] - energies_bg[i])
+                for nbr in self.imgs_segment_neighbors[img][i]:
+                    if graph_cut[i] != graph_cut[nbr]:
+                        energy_difference += abs(edges[i][nbr]) + abs(edges[nbr][i])
+                self.imgs_uncertainties_graph_cut[img][i] = energy_difference
 
             # Get a bool mask of the pixels for a given selection of superpixel IDs
             self.imgs_cosegmented[img] = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True,
@@ -329,14 +343,8 @@ if __name__ == '__main__':
 
     print(histograms.get_bgr_histogram(image_bgr, bins_b=3, bins_g=3, bins_r=3))
 '''
-# TODO
 
-# Add initialization function for dictionaries
-# Uncertainty-based cues
-# More features
-# Smoothness term
-
-# Fix show histogram overwriting
-# Implement Sift and HOG into cosegmentation pipeline
-# Add support for different color spaces (see https://www.researchgate.net/publication/221453363_A_Comparison_Study_of_Different_Color_Spaces_in_Clustering_Based_Image_Segmentation)
+# TODO more control of GMM fitting
+# TODO add initialization function for dictionaries
+# TODO add HOG
 

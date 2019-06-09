@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
 from skimage.segmentation import find_boundaries
 from sklearn.mixture import GaussianMixture
+from sklearn.neighbors import NearestNeighbors
 from scipy.stats import entropy
+from scipy.spatial.distance import euclidean
 
 
 class Algorithms:
@@ -153,8 +155,29 @@ class Algorithms:
             self.imgs_uncertainties_node[img] = [entropy(dist) for dist in likelihoods]
 
     def compute_edge_uncertainties(self):
-        # TODO
-        print('Not yet implemented')
+        # group the foreground and background segments' feature vectors in one list
+        feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
+                              in self.imgs_foreground_segments[img]]
+        feature_vectors_bg = [self.imgs_segment_feature_vectors[img][bg_segment] for img in self.images for bg_segment
+                              in self.imgs_background_segments[img]]
+
+        num_fg_indices = len(feature_vectors_fg)
+
+        feature_vectors = np.concatenate((feature_vectors_fg, feature_vectors_bg))
+        assert len(feature_vectors) >= 10, "At least 10 superpixels need to be marked."
+
+        neighbours = NearestNeighbors(n_neighbors=10, algorithm='auto').fit(feature_vectors)
+
+        for img in self.images:
+            # Retrieve the indices of the nearest neighbours
+            indices = neighbours.kneighbors(self.imgs_segment_feature_vectors[img], return_distance=False)
+
+            # Compute the proportions of foreground and background neighbours
+            proportion_fg = np.sum(indices <= num_fg_indices, axis=1) / 10
+            proportion_bg = np.sum(indices > num_fg_indices, axis=1) / 10
+
+            # Compute the uncertainties as the entropy of the foreground/background proportions
+            self.imgs_uncertainties_edge[img] = [entropy([proportion_fg[id], proportion_bg[id]]) for id in self.imgs_segment_ids[img]]
 
     def perform_graph_cut(self, pairwise_term_scale=-np.infty, scale_parameter=1.0):
         # perform graph-cut for every image
@@ -196,8 +219,8 @@ class Algorithms:
                 for n in self.imgs_segment_neighbors[img][id]:  # For every neighbor of the segment
                     # Create two edges between segment and its neighbor with cost based on histogram matching
                     fv_neighbor = self.imgs_segment_feature_vectors[img][n]  # feature vector of segment's neighbor
-                    energy_forward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(cv2.compareHist(fv, fv_neighbor, cv2.HISTCMP_KL_DIV))))
-                    energy_backward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(cv2.compareHist(fv_neighbor, fv, cv2.HISTCMP_KL_DIV))))
+                    energy_forward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv, fv_neighbor))))
+                    energy_backward = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv_neighbor, fv))))
                     graph.add_edge(nodes[id], nodes[n], energy_forward, energy_backward)
 
             graph.maxflow()
@@ -279,6 +302,7 @@ if __name__ == '__main__':
     print('BIC: ', alg.gmm_bg_bic)
 
     alg.compute_node_uncertainties()
+    alg.compute_edge_uncertainties()
 
     # alg.perform_clustering(6, 'kmeans')
     alg.perform_graph_cut(pairwise_term_scale=-np.infty, scale_parameter=1.0)

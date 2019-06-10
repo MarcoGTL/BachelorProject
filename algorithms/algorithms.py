@@ -114,9 +114,10 @@ class Algorithms:
                 assert len(feature_vector) > 0, 'Feature vector needs to have at least one feature'
                 self.imgs_segment_feature_vectors[img][segment] = np.asarray(feature_vector, dtype='float32')
 
-    # Fits several Gaussian Mixture Model to the foreground and background superpixels depending on the range given
-    # and chooses the best fit
-    def compute_gmm(self, n_init=10, num_components_range=range(5, 9)):
+    # Fits several Gaussian Mixture Model to the foreground and background superpixels and chooses the best fit
+    # components_range : try to fit a model for these number of components
+    # n_init : attempts per number of components
+    def compute_gmm(self, components_range=range(5, 9), n_init=10):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
                               in self.imgs_foreground_segments[img]]
@@ -125,9 +126,9 @@ class Algorithms:
 
         def find_best_gmm(X):
             lowest_bic = np.infty
-            for n_components in num_components_range:
+            for n_components in components_range:
                 # Fit a Gaussian mixture with EM
-                gmm = GaussianMixture(n_components=n_components, covariance_type='full', n_init=10)
+                gmm = GaussianMixture(n_components=n_components, covariance_type='full', n_init=n_init)
                 gmm.fit(X)
                 bic = gmm.bic(np.asarray(X, dtype=np.float32))
                 if bic < lowest_bic:
@@ -333,7 +334,7 @@ if __name__ == '__main__':
             alg.set_fg_segments(image, fg_segments)
             alg.set_bg_segments(image, bg_segments)
 
-    alg.compute_gmm(n_init=10, num_components_range=range(5, 9))
+    alg.compute_gmm(components_range=range(5, 9), n_init=10)
     print('Foreground GMM: ', alg.gmm_fg)
     print('BIC: ', alg.gmm_fg_bic)
     print('Background GMM:', alg.gmm_bg)
@@ -368,6 +369,6 @@ if __name__ == '__main__':
     print(histograms.get_bgr_histogram(image_bgr, bins_b=3, bins_g=3, bins_r=3))
 '''
 
-# TODO more control of GMM fitting
 # TODO add initialization function for dictionaries
+# TODO figure out spectral clustering?
 

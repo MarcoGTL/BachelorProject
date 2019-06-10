@@ -69,7 +69,7 @@ class Algorithms:
                 # Retrieve indices of segment i
                 indices = np.where(self.imgs_segmentation[img] == i)
                 # Center is mean of indices
-                self.imgs_segment_centers[img].append((np.median(indices[0]), np.median(indices[1])))
+                self.imgs_segment_centers[img].append((np.median(indices[1]), np.median(indices[0])))
 
     # sets the foreground of the image at image_path to segments
     def set_fg_segments(self, image_path, segments):
@@ -79,51 +79,43 @@ class Algorithms:
     def set_bg_segments(self, image_path, segments):
         self.imgs_background_segments[image_path] = segments
 
-    def compute_feature_vectors(self, mode='color', bins_h=5, bins_s=3, kp_size=32.0):
-        # TODO change order of loop and if statements
+    # By default calculates a feature vector consisting of means of B, G, R, H, S, V,
+    # and a histogram and their entropy of Hue (5 bins) and Saturation (3bins)
+    def compute_feature_vectors(self, means_bgr=True, means_hsv=True,
+                                h_hist=True, h_hist_bins=5, h_hist_entropy=True,
+                                s_hist=True, s_hist_bins=3, s_hist_entropy=True,
+                                hs_hist=False, hs_hist_bins_h=5, hs_hist_bins_s=3,
+                                sift=False, sift_kp_size=32.0,
+                                hog=False, hog_winSize=(32, 32), hog_blockSize=(16, 16), hog_blockStride=(8, 8),
+                                hog_cellSize=(8, 8), hog_bins=9):
         for img in self.images:
-            self.imgs_segment_feature_vectors[img] = [0 for id in self.imgs_segment_ids[img]]
+            self.imgs_segment_feature_vectors[img] = [0 for i in self.imgs_segment_ids[img]]
+            image_bgr = self.imgs_bgr[img]
+            image_hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
+            image_gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
             for segment in self.imgs_segment_ids[img]:
-                # If mode is color then feature vector is the flattened color histogram
-                if mode is 'color':
-                    feature = features.get_color_feature(self.imgs_bgr[img], self.imgs_segmentation[img] == segment, bins_h, bins_s)
-                elif mode is 'hsv':
-                    feature = features.get_hsv_histogram_feature(self.imgs_bgr[img], self.imgs_segmentation[img] == segment, bins_h, bins_s)
-                elif mode is 'sift':
-                    feature = features.get_sift_feature(self.imgs_bgr[img], self.imgs_segment_centers[img][segment][1],
-                                                        self.imgs_segment_centers[img][segment][0], kp_size)
-                else:
-                    print('Unknown feature mode: ' + mode)
-                    return
-                self.imgs_segment_feature_vectors[img][segment] = feature
+                feature_vector = []
+                mask = np.uint8(self.imgs_segmentation[img] == segment)
+                coord_xy = (self.imgs_segment_centers[img][segment][0], self.imgs_segment_centers[img][segment][1])
+                if means_bgr:
+                    feature_vector += features.get_means_bgr_fv(image_bgr, mask)
+                if means_hsv:
+                    feature_vector += features.get_means_hsv_fv(image_hsv, mask)
+                if h_hist:
+                    feature_vector += features.get_h_hist_fv(image_hsv, mask, h_hist_bins, h_hist_entropy)
+                if s_hist:
+                    feature_vector += features.get_s_hist_fv(image_hsv, mask, s_hist_bins, s_hist_entropy)
+                if hs_hist:
+                    feature_vector += features.get_normalized_hs_hist_fv(image_hsv, mask, hs_hist_bins_h, hs_hist_bins_s)
+                if sift:
+                    feature_vector += features.get_sift_fv(image_gray, coord_xy[0], coord_xy[1], sift_kp_size)
+                if hog:
+                    feature_vector += features.get_hog_fv(image_bgr, coord_xy[0], coord_xy[1], hog_winSize, hog_blockSize, hog_blockStride, hog_cellSize, hog_bins)
+                assert len(feature_vector) > 0, 'Feature vector needs to have at least one feature'
+                self.imgs_segment_feature_vectors[img][segment] = np.asarray(feature_vector, dtype='float32')
 
-    # To be used after superpixel segmentation and feature extraction.
-    # Splits superpixels up up in num_clusters using the given method.
-    def perform_clustering(self, num_clusters=2, method='kmeans'):
-        data = []
-        # combine the feature vectors into one list
-        for img in self.images:
-            for segment in self.imgs_segment_ids[img]:
-                data.append(self.imgs_segment_feature_vectors[img][segment])
-
-        # find the indices of each part in the data list
-        indices = np.cumsum([len(self.imgs_segment_ids[img]) for img in self.images])
-
-        if method is 'spectral':
-            segmentations = clustering.spectral(data, num_clusters)
-        elif method is 'kmeans':
-            segmentations = clustering.k_means(data, num_clusters)
-        else:
-            print('Unknown clustering method: ' + method)
-            return
-
-        for i, img in enumerate(self.images):
-            # Get segmentation for current image
-            segmentation = segmentations[(indices[i - 1] % indices[-1]):indices[i]]
-            # For each pixel in superpixel segmentation look up the cluster of its superpixel
-            self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
-
-    # Fits several Gaussian Mixture Model to the foreground and background superpixels depending on the range given and chooses the best fit
+    # Fits several Gaussian Mixture Model to the foreground and background superpixels depending on the range given
+    # and chooses the best fit
     def compute_gmm(self, n_init=10, num_components_range=range(5, 9)):
         # group the foreground and background segments' feature vectors in one list
         feature_vectors_fg = [self.imgs_segment_feature_vectors[img][fg_segment] for img in self.images for fg_segment
@@ -245,6 +237,32 @@ class Algorithms:
             self.imgs_cosegmented[img] = np.where(np.isin(self.imgs_segmentation[img], np.nonzero(graph_cut)), True,
                                                   False)
 
+    # To be used after superpixel segmentation and feature extraction.
+    # Splits superpixels up up in num_clusters using the given method.
+    def perform_clustering(self, num_clusters=2, method='kmeans'):
+        data = []
+        # combine the feature vectors into one list
+        for img in self.images:
+            for segment in self.imgs_segment_ids[img]:
+                data.append(self.imgs_segment_feature_vectors[img][segment])
+
+        # find the indices of each part in the data list
+        indices = np.cumsum([len(self.imgs_segment_ids[img]) for img in self.images])
+
+        if method is 'spectral':
+            segmentations = clustering.spectral(data, num_clusters)
+        elif method is 'kmeans':
+            segmentations = clustering.k_means(data, num_clusters)
+        else:
+            print('Unknown clustering method: ' + method)
+            return
+
+        for i, img in enumerate(self.images):
+            # Get segmentation for current image
+            segmentation = segmentations[(indices[i - 1] % indices[-1]):indices[i]]
+            # For each pixel in superpixel segmentation look up the cluster of its superpixel
+            self.imgs_cosegmented[img] = [segmentation[pixel] for pixel in self.imgs_segmentation[img]]
+
     def get_segment_boundaries(self, img_path):
         return find_boundaries(self.imgs_segmentation[img_path])
 
@@ -296,7 +314,13 @@ if __name__ == '__main__':
     # alg.save_segmented_images('output/superpixel')
 
     # Extract features
-    alg.compute_feature_vectors(mode='color', bins_h=5, bins_s=3, kp_size=32.0)
+    alg.compute_feature_vectors(means_bgr=True, means_hsv=True,
+                                h_hist=True, h_hist_bins=5, h_hist_entropy=True,
+                                s_hist=True, s_hist_bins=3, s_hist_entropy=True,
+                                hs_hist=False, hs_hist_bins_h=5, hs_hist_bins_s=3,
+                                sift=False, sift_kp_size=32.0,
+                                hog=False, hog_winSize=(32, 32), hog_blockSize=(16, 16), hog_blockStride=(8, 8),
+                                hog_cellSize=(8, 8), hog_bins=9)
 
     # Retrieve foreground and background segments from marking images in markings folder
     # marking images should be white with red pixels indicating foreground and blue pixels indicating background and
@@ -318,7 +342,7 @@ if __name__ == '__main__':
     alg.compute_node_uncertainties()
     alg.compute_edge_uncertainties()
 
-    # alg.perform_clustering(6, 'kmeans')
+    #alg.perform_clustering(6, 'kmeans')
     alg.perform_graph_cut(pairwise_term_scale=-np.infty, scale_parameter=1.0)
 
     for image in image_paths:
@@ -346,5 +370,4 @@ if __name__ == '__main__':
 
 # TODO more control of GMM fitting
 # TODO add initialization function for dictionaries
-# TODO add HOG
 

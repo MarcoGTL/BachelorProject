@@ -62,6 +62,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.fgRadioButton.clicked.connect(self.currentPencil)
         self.bgRadioButton.clicked.connect(self.currentPencil)
 
+        self.mdsData = []
         self.point = (-1, -1)
         self.image_paths = []
         self.algs = algorithms.Algorithms([])
@@ -74,6 +75,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.img_float = []
         self.image_path = ""
         self.populate()
+        self.graphMarked = []
 
     def populate(self):
         path = os.getcwd() + '/' + self.currentFolder
@@ -440,8 +442,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def create_graph(self):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
-        data = MDS.mds_transform(self.algs.imgs_segment_feature_vectors[self.image_path])
-        print(data)
+        self.mdsData = MDS.mds_transform(self.algs.imgs_segment_feature_vectors[self.image_path])
+        print(self.mdsData)
         # Create the main application instance
 
         # Create the view
@@ -457,15 +459,34 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.view.addItem(scatter)
 
         # Convert data array into a list of dictionaries with the x,y-coordinates
-        pos = [{'pos': x} for x in data]
+        pos = [{'pos': x} for x in self.mdsData]
         print(pos)
         scatter.setData(pos)
 
     def on_click_graph(self, graph, points):
+        self.graphMarked.clear()
         for point in points:
-            print(point.pos()[0], point.pos()[1])
-            #find out what superpixelthis belongs tho
-            # change markings from yellow to green in superpixel screen
+            print([point.pos()[0], point.pos()[1]])
+            self.graphMarked.append(np.where([point.pos()[0], point.pos()[1]] == self.mdsData)[0][0])
+        print(self.graphMarked)
+        self.draw_bounds()
+        qp = QtGui.QPainter(self.superImage.pixmap())
+        qp.setPen(QtGui.QPen(QtGui.QColor(0,255,0,25), 3))
+        i = 0
+        j = 0
+        array = self.algs.imgs_segmentation[self.image_path]
+        print(array)
+        lengthy = len(array)
+        lengthx = len(array[0])
+        print(lengthy, lengthx)
+        while i < lengthy:
+            while j < lengthx:
+                if array[i][j] in self.graphMarked:
+                    qp.drawPoint(j, i)
+                j = j + 1
+            j = 0
+            i = i + 1
+        self.superImage.update()
 
 
 

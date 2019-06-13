@@ -318,8 +318,9 @@ class Pipeline:
         Note: Requires compute_gmm
 
         parameters:
-            pairwise_term_scale:
-            scale_parameter:
+            pairwise_term_scale (float): Used to scale the pairwise term in relation to the unary term.
+            scale_parameter (float): Used to adjust the strength of the response in the pairwise term value
+                depending on distance.
         """
         # perform graph-cut for every image
         for img in self.images:
@@ -534,3 +535,4 @@ if __name__ == '__main__':
     print(histograms.get_bgr_histogram(image_bgr, bins_b=3, bins_g=3, bins_r=3))
     """
 
+# TODO: give different names to the graph-cut scales

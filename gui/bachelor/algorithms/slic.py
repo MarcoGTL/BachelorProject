@@ -5,6 +5,10 @@ import matplotlib.pyplot
 from skimage import io
 import numpy
 
+"""
+A collection of functions for SLIC superpixels, which are currently not used in the pipeline.
+"""
+
 
 # accepts path to the image file and returns a float64 representation of the image
 # removes transparency if needed

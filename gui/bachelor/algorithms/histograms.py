@@ -2,6 +2,10 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 
+"""
+A collection of functions to create and plot histograms.
+"""
+
 
 def get_b_histogram(image_bgr, mask=None, bins_b=256):
     if mask is not None:

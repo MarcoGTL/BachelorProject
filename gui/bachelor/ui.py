@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 from mainui import designer
-from algorithms import algorithms
+from algorithms import pipeline
 from algorithms import MDS
 import os
 import sys
@@ -65,7 +65,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.mdsData = []
         self.point = (-1, -1)
         self.image_paths = []
-        self.algs = algorithms.Algorithms([])
+        self.algs = pipeline.Pipeline([])
         self.pencil = 2
         self.relative_image_path = ""
         self.foreground = dict()
@@ -97,7 +97,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.image.clear()
         self.foreground.clear()
         self.background.clear()
-        self.algs = algorithms.Algorithms([])
+        self.algs = pipeline.Pipeline([])
         index = self.treeView.currentIndex()
         file_path = self.model.filePath(index)
         self.selectedFolder = os.path.basename(file_path)
@@ -115,7 +115,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                 item.setText(file)
                 self.listWidget.addItem(item)
             if len(self.image_paths) != 0:
-                self.algs = algorithms.Algorithms(self.image_paths)
+                self.algs = pipeline.Pipeline(self.image_paths)
                 print(self.image_paths)
 
     def choose_image(self):
@@ -487,6 +487,14 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             j = 0
             i = i + 1
         self.superImage.update()
+
+    def set_gmm(self):
+        self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()), n_init= self.n_init.value())
+        self.algs.compute_edge_uncertainties()
+        self.algs.compute_node_uncertainties()
+        
+
+
 
 
 

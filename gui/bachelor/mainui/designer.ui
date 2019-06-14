@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1057</width>
-    <height>860</height>
+    <width>1072</width>
+    <height>952</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -139,39 +139,6 @@
          </layout>
         </widget>
        </item>
-       <item row="7" column="0">
-        <widget class="QFrame" name="graphFrame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_7">
-          <item row="1" column="0">
-           <widget class="QRadioButton" name="bwRadioButton">
-            <property name="text">
-             <string>black white mode</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QPushButton" name="graphcomputeButton">
-            <property name="text">
-             <string>Graph cut</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QRadioButton" name="bRadioButton">
-            <property name="text">
-             <string>border mode</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
        <item row="3" column="0">
         <widget class="QComboBox" name="clusteringBox">
          <item>
@@ -187,104 +154,6 @@
          <item>
           <property name="text">
            <string>Spectral clustering</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="9" column="0">
-        <widget class="QFrame" name="kmeansFrame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_17">
-          <item row="1" column="0">
-           <widget class="QPushButton" name="kmeansButton">
-            <property name="text">
-             <string>kmeans clustering</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="kclustervalue">
-            <property name="minimum">
-             <number>2</number>
-            </property>
-            <property name="maximum">
-             <number>12</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>Clusters</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Clustering</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="0">
-        <widget class="QFrame" name="spectralFrame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_9">
-          <item row="1" column="0">
-           <widget class="QPushButton" name="spectralButton">
-            <property name="text">
-             <string>Spectral clustering</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="Sclustervalue">
-            <property name="minimum">
-             <number>2</number>
-            </property>
-            <property name="maximum">
-             <number>12</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Clusters</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QComboBox" name="extractionBox">
-         <item>
-          <property name="text">
-           <string>Color</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>hsv</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Sift</string>
           </property>
          </item>
         </widget>
@@ -386,6 +255,246 @@
          </layout>
         </widget>
        </item>
+       <item row="9" column="0">
+        <widget class="QFrame" name="kmeansFrame">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_17">
+          <item row="1" column="0">
+           <widget class="QPushButton" name="kmeansButton">
+            <property name="text">
+             <string>kmeans clustering</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="kclustervalue">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>12</number>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Clusters</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Clustering</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QFrame" name="spectralFrame">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_9">
+          <item row="1" column="0">
+           <widget class="QPushButton" name="spectralButton">
+            <property name="text">
+             <string>Spectral clustering</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="Sclustervalue">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>12</number>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Clusters</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QComboBox" name="extractionBox">
+         <item>
+          <property name="text">
+           <string>Color</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>hsv</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Sift</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QFrame" name="graphFrame">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="9" column="0" colspan="2">
+           <widget class="QFrame" name="frame_9">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_18">
+             <item row="0" column="0">
+              <widget class="QRadioButton" name="bwRadioButton">
+               <property name="text">
+                <string>black white mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QRadioButton" name="bRadioButton">
+               <property name="text">
+                <string>border mode</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QFrame" name="frame_6">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_11">
+             <item row="0" column="0">
+              <widget class="QRadioButton" name="edgeRadioButton">
+               <property name="text">
+                <string>Edge</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QRadioButton" name="nodeRadioButton">
+               <property name="text">
+                <string>Node</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>pairwise term scale</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="text">
+             <string>Compute GMM and uncertainties</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
+            <property name="decimals">
+             <number>5</number>
+            </property>
+            <property name="maximum">
+             <double>999999999.000000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QSpinBox" name="componentMin">
+            <property name="value">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="componentMax"/>
+          </item>
+          <item row="6" column="1">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>scale parameters</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QSpinBox" name="n_init"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Number of restarts</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Component range</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QDoubleSpinBox" name="doubleSpinBox">
+            <property name="decimals">
+             <number>5</number>
+            </property>
+            <property name="maximum">
+             <double>999999999.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0" colspan="2">
+           <widget class="QPushButton" name="graphcomputeButton">
+            <property name="text">
+             <string>Graph cut</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
@@ -413,7 +522,7 @@
     <item row="0" column="1">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="drawTab">
        <attribute name="title">
@@ -430,8 +539,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>518</width>
-             <height>641</height>
+             <width>533</width>
+             <height>733</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
@@ -463,8 +572,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>518</width>
-             <height>641</height>
+             <width>533</width>
+             <height>733</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_16">
@@ -481,6 +590,11 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Uncertainty</string>
+       </attribute>
+      </widget>
       <widget class="QWidget" name="resultsTab">
        <attribute name="title">
         <string>results</string>
@@ -496,8 +610,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>518</width>
-             <height>641</height>
+             <width>533</width>
+             <height>733</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_14">
@@ -580,17 +694,17 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
-        <widget class="QPushButton" name="markingsButton">
-         <property name="text">
-          <string>Set Markings</string>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="0">
         <widget class="QRadioButton" name="radioButton">
          <property name="text">
           <string>Eraser</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="markingsButton">
+         <property name="text">
+          <string>Set Markings</string>
          </property>
         </widget>
        </item>
@@ -604,7 +718,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1057</width>
+     <width>1072</width>
      <height>25</height>
     </rect>
    </property>

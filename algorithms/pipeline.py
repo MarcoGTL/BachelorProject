@@ -318,7 +318,8 @@ class Pipeline:
         Note: Requires compute_gmm
 
         parameters:
-            pairwise_term_scale (float): Used to scale the pairwise term in relation to the unary term.
+            pairwise_term_scale (float): Used to scale the pairwise term in relation to the unary term. If this is not
+                provided then the scale is set to the largest unary energy value.
             scale_parameter (float): Used to adjust the strength of the response in the pairwise term value
                 depending on distance.
         """

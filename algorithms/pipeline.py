@@ -307,7 +307,7 @@ class Pipeline:
             self.images_superpixels_uncertainties_edge[img] = [entropy([proportion_fg[sp], proportion_bg[sp]])
                                                                for sp in self.images_superpixels[img]]
 
-    def perform_graph_cut(self, pairwise_term_scale=-np.infty, scale_parameter=1.0):
+    def perform_graph_cut(self, pairwise_term_scale=None, scale_parameter=1.0):
         """
         Segments every image using graph-cut. The graph built has nodes with energies based on GMM matching, and edges
         based on euclidean distance between neighbouring superpixels' feature vectors. The resulting cosegmentation is
@@ -318,7 +318,8 @@ class Pipeline:
         Note: Requires compute_gmm
 
         parameters:
-            pairwise_term_scale (float): Used to scale the pairwise term in relation to the unary term.
+            pairwise_term_scale (float): Used to scale the pairwise term in relation to the unary term. If this is not
+                provided then the scale is set to the largest unary energy value.
             scale_parameter (float): Used to adjust the strength of the response in the pairwise term value
                 depending on distance.
         """
@@ -332,7 +333,8 @@ class Pipeline:
             nodes = graph.add_nodes(num_nodes)
 
             # If no scale is given initialize it as -infinity and set it to the largest unary term energy
-            if pairwise_term_scale == -np.infty:
+            if pairwise_term_scale is None:
+                pairwise_term_scale = -np.infty
                 compute_scale = True
             else:
                 compute_scale = False
@@ -509,7 +511,7 @@ if __name__ == '__main__':
 
     # Perform cosegmentation: either unsupervised k_means clustering or graph-cut can be used
     # pipeline.perform_k_means_clustering(num_clusters=6)
-    pipeline.perform_graph_cut(pairwise_term_scale=-np.infty, scale_parameter=1.0)
+    pipeline.perform_graph_cut(pairwise_term_scale=None, scale_parameter=1.0)
 
     # Output the results in output folder
     pipeline.plot_cosegmentations(folder_path)

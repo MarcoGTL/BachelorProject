@@ -10,7 +10,7 @@ import numpy as np
 import pyqtgraph as pg
 from skimage.segmentation import find_boundaries
 
-# add heat map, eraser, mds with some way of linking
+# add heat map, eraser, ground truth comparison
 
 colors = [[0, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255],
           [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0], [128, 0, 128],
@@ -35,7 +35,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.superpixelButton.clicked.connect(self.calculate_superpixels)
         self.graphcutButton.clicked.connect(self.compute_cosegmentation)
         self.kmeansButton.clicked.connect(self.kmeans)
-
+        self.graph_button.clicked.connect(self.create_graph)
+        self.GMMButton.clicked.connect(self.set_gmm)
         self.bwRadioButton.clicked.connect(self.draw_results)
         self.bRadioButton.clicked.connect(self.draw_results)
 
@@ -45,7 +46,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         self.fgRadioButton.clicked.connect(self.currentPencil)
         self.bgRadioButton.clicked.connect(self.currentPencil)
-
 
         self.mdsData = []
         self.point = (-1, -1)
@@ -242,7 +242,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def calculate_superpixels(self):
         self.algs.compute_superpixels(self.superpixelSpinBox.value(), self.compactnessSpinBox.value(),
-                                           self.iterationsSpinBox.value(), self.sigmaSpinBox.value())
+                                      self.iterationsSpinBox.value(), self.sigmaSpinBox.value())
         self.algs.compute_neighbors()
         self.algs.compute_centers()
         self.draw_bounds()
@@ -250,9 +250,20 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.enable_buttons(2)
 
     def set_histograms(self):
-        self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(), h_hist=self.Hue.isChecked(), h_hist_bins=self.HHist.value(), h_hist_entropy=self.HentropyCheckBox.isChecked(), s_hist=self.Saturation.isChecked(), s_hist_bins=self.SHist.value(), s_hist_entropy=self.SentropyCheckBox.isChecked(), hs_hist=self.HueSat.isChecked(), hs_hist_bins_h=self.HSHHist.value(), hs_hist_bins_s=self.HSSHist.value(), sift=self.Sift.isChecked(), sift_kp_size=self.siftKeyPoint.value(), hog=self.Hog, hog_winSize=(self.winSize.value(), self.winSize.value()), hog_blockSize=(self.blockSize.value(), self.blockSize.value()), hog_blockStride=(self.blockStride.value(), self.blockStride.value()), hog_cellSize=(self.cellSize.value(), self.cellSize.value()))
+        self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(),
+                                          h_hist=self.Hue.isChecked(), h_hist_bins=self.HHist.value(),
+                                          h_hist_entropy=self.HentropyCheckBox.isChecked(),
+                                          s_hist=self.Saturation.isChecked(), s_hist_bins=self.SHist.value(),
+                                          s_hist_entropy=self.SentropyCheckBox.isChecked(),
+                                          hs_hist=self.HueSat.isChecked(), hs_hist_bins_h=self.HSHHist.value(),
+                                          hs_hist_bins_s=self.HSSHist.value(), sift=self.Sift.isChecked(),
+                                          sift_kp_size=self.siftKeyPoint.value(), hog=self.Hog.isChecked(),
+                                          hog_winSize=(self.winSize.value(), self.winSize.value()),
+                                          hog_blockSize=(self.blockSize.value(), self.blockSize.value()),
+                                          hog_blockStride=(self.blockStride.value(), self.blockStride.value()),
+                                          hog_cellSize=(self.cellSize.value(), self.cellSize.value()))
         self.disable_buttons()
-        self.enable_buttons(4)
+        self.enable_buttons(3)
 
     def set_markings(self):
         foreground = []
@@ -265,7 +276,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                 background.append(self.algs.images_segmented[self.image_path][y[1]][y[0]])
         self.algs.set_fg_segments(self.image_path, foreground)
         self.algs.set_bg_segments(self.image_path, background)
-
 
     def clear_markings(self):
         self.foreground[self.image_path].clear()
@@ -282,6 +292,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.bRadioButton.setEnabled(True)
 
     def kmeans(self):
+        self.set_markings()
         self.algs.perform_k_means_clustering(num_clusters=self.kclustervalue.value())
         self.draw_clusters()
 
@@ -403,7 +414,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         print(self.graphMarked)
         self.draw_bounds()
         qp = QtGui.QPainter(self.superImage.pixmap())
-        qp.setPen(QtGui.QPen(QtGui.QColor(0,255,0,25), 3))
+        qp.setPen(QtGui.QPen(QtGui.QColor(0, 255, 0, 25), 3))
         i = 0
         j = 0
         array = self.algs.images_segmented[self.image_path]
@@ -421,19 +432,29 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.superImage.update()
 
     def set_gmm(self):
-        self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()), n_init= self.n_init.value())
+        self.set_markings()
+        self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()),
+                              n_init=self.n_init.value())
         self.algs.compute_edge_uncertainties()
         self.algs.compute_node_uncertainties()
+        self.disable_buttons()
+        self.enable_buttons(4)
 
     def disable_buttons(self):
         self.superpixelButton.setDisabled(True)
         self.histogramButton.setDisabled(True)
+        self.histogramRadioButton.setDisabled(True)
+        self.drawRadioButton.setDisabled(True)
         self.histogramRadioButton.setDisabled(True)
         self.graph_button.setDisabled(True)
         self.GMMButton.setDisabled(True)
         self.graphcutButton.setDisabled(True)
         self.kmeansButton.setDisabled(True)
         self.clearMarkingsButton.setDisabled(True)
+        self.edgeRadioButton.setDisabled(True)
+        self.nodeRadioButton.setDisabled(True)
+        self.bwRadioButton.setDisabled(True)
+        self.bRadioButton.setDisabled(True)
 
     def enable_buttons(self, option):
         if option > 0:
@@ -441,13 +462,20 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.clearMarkingsButton.setEnabled(True)
         if option > 1:
             self.histogramButton.setEnabled(True)
-        if option > 3:
+            self.drawRadioButton.setEnabled(True)
+            self.histogramRadioButton.setEnabled(True)
+        if option > 2:
             self.histogramRadioButton.setEnabled(True)
             self.graph_button.setEnabled(True)
             self.GMMButton.setEnabled(True)
             self.kmeansButton.setEnabled(True)
-        if option > 4:
+        if option > 3:
             self.graphcutButton.setEnabled(True)
+            self.edgeRadioButton.setEnabled(True)
+            self.nodeRadioButton.setEnabled(True)
+        if option > 4:
+            self.bwRadioButton.setEnabled(True)
+            self.bRadioButton.setEnabled(True)
 
     def change_features(self):
         self.colorLabel1.setHidden(True)
@@ -493,7 +521,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.colorLabel4.setVisible(True)
             self.HSSHist.setVisible(True)
             self.HSHHist.setVisible(True)
-        if currentIndex ==  "Sift":
+        if currentIndex == "Sift":
             self.siftlabel.setVisible(True)
             self.siftKeyPoint.setVisible(True)
         if currentIndex == "Hog":

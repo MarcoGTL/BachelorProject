@@ -177,32 +177,6 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
-          <item row="5" column="0" colspan="2">
-           <widget class="QFrame" name="frame_6">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_11">
-             <item row="0" column="0">
-              <widget class="QRadioButton" name="edgeRadioButton">
-               <property name="text">
-                <string>Edge</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QRadioButton" name="nodeRadioButton">
-               <property name="text">
-                <string>Node</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
           <item row="7" column="0">
            <widget class="QDoubleSpinBox" name="doubleSpinBox">
             <property name="decimals">
@@ -254,7 +228,11 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QSpinBox" name="componentMax"/>
+           <widget class="QSpinBox" name="componentMax">
+            <property name="value">
+             <number>9</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QSpinBox" name="componentMin">
@@ -284,43 +262,12 @@
             </property>
            </widget>
           </item>
-          <item row="9" column="0" colspan="2">
-           <widget class="QFrame" name="frame_9">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_18">
-             <item row="0" column="0">
-              <widget class="QRadioButton" name="bwRadioButton">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>black white mode</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QRadioButton" name="bRadioButton">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>border mode</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
           <item row="3" column="0">
-           <widget class="QSpinBox" name="n_init"/>
+           <widget class="QSpinBox" name="n_init">
+            <property name="value">
+             <number>10</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -917,7 +864,7 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_13">
-       <item row="4" column="0">
+       <item row="8" column="0">
         <widget class="QLabel" name="label_29">
          <property name="maximumSize">
           <size>
@@ -930,11 +877,100 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_9">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>superpixel setting:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="0">
         <widget class="QPushButton" name="pushButton_3">
          <property name="text">
           <string>Export settings</string>
          </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QFrame" name="frame_6">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_11">
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="edgeRadioButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Edge</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QRadioButton" name="nodeRadioButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Node</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QFrame" name="frame_9">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_18">
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="bwRadioButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>black white mode</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QRadioButton" name="bRadioButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>border mode</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item row="0" column="0">
@@ -961,6 +997,9 @@
          <layout class="QGridLayout" name="gridLayout_9">
           <item row="0" column="0">
            <widget class="QRadioButton" name="drawRadioButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Draw mode</string>
             </property>
@@ -1050,14 +1089,14 @@
          </layout>
         </widget>
        </item>
-       <item row="6" column="0">
+       <item row="10" column="0">
         <widget class="QPushButton" name="pushButton_4">
          <property name="text">
           <string>Import Settings</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
+       <item row="9" column="0">
         <widget class="QFrame" name="frame_11">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
@@ -1069,7 +1108,7 @@
           <item row="3" column="0">
            <widget class="QLabel" name="markingStatus">
             <property name="text">
-             <string>markingsStatus</string>
+             <string>Not set</string>
             </property>
            </widget>
           </item>
@@ -1083,7 +1122,7 @@
           <item row="1" column="0">
            <widget class="QLabel" name="superpixelStatus">
             <property name="text">
-             <string>set</string>
+             <string>Not set</string>
             </property>
            </widget>
           </item>
@@ -1104,23 +1143,24 @@
           <item row="5" column="0">
            <widget class="QLabel" name="clusteringStatus">
             <property name="text">
-             <string>clusteringStatus</string>
+             <string>Not set</string>
             </property>
            </widget>
           </item>
          </layout>
         </widget>
        </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_9">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_15">
          <property name="text">
-          <string>superpixel setting:</string>
+          <string>Uncertainty mode</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_16">
+         <property name="text">
+          <string>Graph cut mode</string>
          </property>
         </widget>
        </item>

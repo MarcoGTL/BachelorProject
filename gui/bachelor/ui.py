@@ -28,39 +28,24 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.listWidget.setViewMode(QtWidgets.QListView.IconMode)
         self.listWidget.setIconSize(QtCore.QSize(64, 64))
         self.listWidget.currentItemChanged.connect(self.choose_image)
+        self.listWidget.setMovement(0)
+
         self.clearMarkingsButton.clicked.connect(self.clear_markings)
         self.histogramButton.clicked.connect(self.set_histograms)
         self.superpixelButton.clicked.connect(self.calculate_superpixels)
-        self.markingsButton.clicked.connect(self.set_markings)
-        self.graphcomputeButton.clicked.connect(self.compute_cosegmentation)
+        self.graphcutButton.clicked.connect(self.compute_cosegmentation)
         self.kmeansButton.clicked.connect(self.kmeans)
-        self.spectralButton.clicked.connect(self.spectral)
-        self.clusteringBox.currentIndexChanged.connect(self.clustering_options)
-        self.extractionBox.currentIndexChanged.connect(self.extraction_options)
-        self.graph_button.clicked.connect(self.create_graph)
+
         self.bwRadioButton.clicked.connect(self.draw_results)
         self.bRadioButton.clicked.connect(self.draw_results)
 
-        self.bwRadioButton.setDisabled(True)
-        self.bRadioButton.setDisabled(True)
-        self.clearMarkingsButton.setDisabled(True)
-        self.histogramButton.setDisabled(True)
-        self.superpixelButton.setDisabled(True)
-        self.graphcomputeButton.setDisabled(True)
-        self.spectralButton.setDisabled(True)
-        self.kmeansButton.setDisabled(True)
-        self.histogramCheckBox.setDisabled(True)
-        self.markingsButton.setDisabled(True)
-
+        self.featureSelected.currentIndexChanged.connect(self.change_features)
+        self.clusteringBox.currentIndexChanged.connect(self.clustering_options)
         self.kmeansFrame.setHidden(True)
-        self.spectralFrame.setHidden(True)
 
-        self.fgRadioButton.setChecked(True)
-        self.bwRadioButton.setChecked(True)
-        self.siftlabel.setHidden(True)
-        self.siftSpinBox.setHidden(True)
         self.fgRadioButton.clicked.connect(self.currentPencil)
         self.bgRadioButton.clicked.connect(self.currentPencil)
+
 
         self.mdsData = []
         self.point = (-1, -1)
@@ -71,11 +56,13 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.foreground = dict()
         self.background = dict()
         self.currentFolder = "images"
-        self.selectedFolder = "haaaaaaaaaaaaaaaaaaaa"
+        self.selectedFolder = "something went wrong"
         self.img_float = []
         self.image_path = ""
-        self.populate()
         self.graphMarked = []
+
+        self.change_features()
+        self.populate()
 
     def populate(self):
         path = os.getcwd() + '/' + self.currentFolder
@@ -135,12 +122,11 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             if self.image_path not in self.foreground:
                 self.foreground[self.image_path] = []
                 self.background[self.image_path] = []
-                self.clearMarkingsButton.setEnabled(True)
             else:
                 self.draw_markings()
             self.draw_bounds()
 
-            if self.image_path in self.algs.imgs_cosegmented:
+            if self.image_path in self.algs.images_cosegmented:
                 if self.clusteringBox.currentIndex() == 0:
                     self.draw_results()
                 if self.clusteringBox.currentIndex() == 1:
@@ -150,20 +136,10 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
 
         else:
-            self.superpixelButton.setDisabled(True)
-            self.histogramButton.setDisabled(True)
-            self.histogramCheckBox.setDisabled(True)
-            self.markingsButton.setDisabled(True)
-            self.graphcomputeButton.setDisabled(True)
-            self.spectralButton.setDisabled(True)
-            self.kmeansButton.setDisabled(True)
+            self.disable_buttons()
 
     def change_super_pixel(self):
         self.draw_bounds()
-
-    def draw_super_pixel(self):
-        if self.superpixelcheck.isChecked():
-            self.drawbounds()
 
     def movStart(self, event):
         self.image.update()
@@ -242,7 +218,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         for x in self.foreground[self.image_path]:
             qp.drawPoint(x[0], x[1])
 
-        if self.image_path in self.algs.imgs_segmentation:
+        if self.image_path in self.algs.images_segmented:
             qpbounds = QtGui.QPainter(self.superImage.pixmap())
             qpbounds.setPen(QtGui.QPen(QtCore.Qt.blue, 1))
             for x in self.background[self.image_path]:
@@ -265,53 +241,31 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.pencil = 0
 
     def calculate_superpixels(self):
-        self.algs.compute_superpixels_slic(self.superpixelSpinBox.value(), self.compactnessSpinBox.value(),
+        self.algs.compute_superpixels(self.superpixelSpinBox.value(), self.compactnessSpinBox.value(),
                                            self.iterationsSpinBox.value(), self.sigmaSpinBox.value())
         self.algs.compute_neighbors()
+        self.algs.compute_centers()
         self.draw_bounds()
-        self.histogramButton.setEnabled(True)
-        self.histogramCheckBox.setDisabled(True)
-        self.markingsButton.setDisabled(True)
-        self.graphcomputeButton.setDisabled(True)
-        self.spectralButton.setDisabled(True)
-        self.kmeansButton.setDisabled(True)
+        self.disable_buttons()
+        self.enable_buttons(2)
 
     def set_histograms(self):
-        if self.extractionBox.currentIndex() == 0:
-            self.algs.compute_feature_vectors('color', self.HspinBox.value(), self.SSpinBox.value(),
-                                              self.siftSpinBox.value())
-        elif self.extractionBox.currentIndex() == 1:
-            self.algs.compute_feature_vectors('hsv', self.HspinBox.value(), self.SSpinBox.value(),
-                                              self.siftSpinBox.value())
-        elif self.extractionBox.currentIndex() == 2:
-            self.algs.compute_centers()
-            self.algs.compute_feature_vectors('sift', self.HspinBox.value(), self.SSpinBox.value(),
-                                              self.siftSpinBox.value())
-
-        self.markingsButton.setEnabled(True)
-        self.histogramCheckBox.setEnabled(True)
-        self.graphcomputeButton.setDisabled(True)
-        self.spectralButton.setDisabled(True)
-        self.kmeansButton.setDisabled(True)
+        self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(), h_hist=self.Hue.isChecked(), h_hist_bins=self.HHist.value(), h_hist_entropy=self.HentropyCheckBox.isChecked(), s_hist=self.Saturation.isChecked(), s_hist_bins=self.SHist.value(), s_hist_entropy=self.SentropyCheckBox.isChecked(), hs_hist=self.HueSat.isChecked(), hs_hist_bins_h=self.HSHHist.value(), hs_hist_bins_s=self.HSSHist.value(), sift=self.Sift.isChecked(), sift_kp_size=self.siftKeyPoint.value(), hog=self.Hog, hog_winSize=(self.winSize.value(), self.winSize.value()), hog_blockSize=(self.blockSize.value(), self.blockSize.value()), hog_blockStride=(self.blockStride.value(), self.blockStride.value()), hog_cellSize=(self.cellSize.value(), self.cellSize.value()))
+        self.disable_buttons()
+        self.enable_buttons(4)
 
     def set_markings(self):
         foreground = []
         background = []
         for x in self.foreground[self.image_path]:
-            if self.algs.imgs_segmentation[self.image_path][x[1]][x[0]] not in foreground:
-                foreground.append(self.algs.imgs_segmentation[self.image_path][x[1]][x[0]])
+            if self.algs.images_segmented[self.image_path][x[1]][x[0]] not in foreground:
+                foreground.append(self.algs.images_segmented[self.image_path][x[1]][x[0]])
         for y in self.background[self.image_path]:
-            if self.algs.imgs_segmentation[self.image_path][y[1]][y[0]] not in self.background:
-                background.append(self.algs.imgs_segmentation[self.image_path][y[1]][y[0]])
+            if self.algs.images_segmented[self.image_path][y[1]][y[0]] not in self.background:
+                background.append(self.algs.images_segmented[self.image_path][y[1]][y[0]])
         self.algs.set_fg_segments(self.image_path, foreground)
         self.algs.set_bg_segments(self.image_path, background)
 
-        self.graphcomputeButton.setEnabled(True)
-        self.spectralButton.setEnabled(True)
-        self.kmeansButton.setEnabled(True)
-        self.graphcomputeButton.setEnabled(True)
-        self.spectralButton.setEnabled(True)
-        self.kmeansButton.setEnabled(True)
 
     def clear_markings(self):
         self.foreground[self.image_path].clear()
@@ -327,12 +281,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.bwRadioButton.setEnabled(True)
         self.bRadioButton.setEnabled(True)
 
-    def spectral(self):
-        self.algs.perform_clustering(self.Sclustervalue.value(), 'spectral')
-        self.draw_clusters()
-
     def kmeans(self):
-        self.algs.perform_clustering(self.kclustervalue.value(), 'kmeans')
+        self.algs.perform_k_means_clustering(num_clusters=self.kclustervalue.value())
         self.draw_clusters()
 
     def graph_cut(self):
@@ -342,7 +292,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         pixmap = QtGui.QPixmap(self.image_path)
 
         self.result_image.setPixmap(pixmap)
-        results = self.algs.imgs_cosegmented[self.image_path]
+        results = self.algs.images_cosegmented[self.image_path]
         qp = QtGui.QPainter(self.result_image.pixmap())
         i = 0
         j = 0
@@ -363,7 +313,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         if self.bwRadioButton.isChecked():
             pixmap.fill(QtCore.Qt.black)
         self.result_image.setPixmap(pixmap)
-        results = self.algs.imgs_cosegmented[self.image_path]
+        results = self.algs.images_cosegmented[self.image_path]
         qp = QtGui.QPainter(self.result_image.pixmap())
         if self.bwRadioButton.isChecked():
             qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
@@ -387,7 +337,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def draw_bounds(self):
         pixmap = QtGui.QPixmap(self.image_path)
         self.superImage.setPixmap(pixmap)
-        if self.image_path not in self.algs.imgs_segmentation:
+        if self.algs.images_segmented[self.image_path] is None:
             return
         qp = QtGui.QPainter(self.superImage.pixmap())
         qp.setPen(QtGui.QPen(QtCore.Qt.red, 1))
@@ -397,7 +347,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         for x in self.background[self.image_path]:
             qp.drawPoint(x[0], x[1])
         qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 3))
-        boundaries = self.algs.get_segment_boundaries(self.image_path)
+        boundaries = self.algs.get_superpixel_borders_mask(self.image_path)
         i = 0
         j = 0
         lengthy = len(boundaries)
@@ -416,33 +366,15 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def clustering_options(self):
         if self.clusteringBox.currentIndex() == 0:
             self.kmeansFrame.setHidden(True)
-            self.spectralFrame.setHidden(True)
             self.graphFrame.setVisible(True)
         elif self.clusteringBox.currentIndex() == 1:
             self.kmeansFrame.setVisible(True)
-            self.spectralFrame.setHidden(True)
             self.graphFrame.setHidden(True)
-        elif self.clusteringBox.currentIndex() == 2:
-            self.kmeansFrame.setHidden(True)
-            self.spectralFrame.setVisible(True)
-            self.graphFrame.setHidden(True)
-
-    def extraction_options(self):
-        if self.extractionBox.currentIndex() == 0 or self.extractionBox.currentIndex() == 1:
-            x = True
-        elif self.extractionBox.currentIndex() == 2:
-            x = False
-        self.siftlabel.setHidden(x)
-        self.siftSpinBox.setHidden(x)
-        self.colorlabel1.setHidden(not x)
-        self.colorlabel2.setHidden(not x)
-        self.SSpinBox.setHidden(not x)
-        self.HspinBox.setHidden(not x)
 
     def create_graph(self):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
-        self.mdsData = MDS.mds_transform(self.algs.imgs_segment_feature_vectors[self.image_path])
+        self.mdsData = MDS.mds_transform(self.algs.images_superpixels_feature_vector[self.image_path])
         print(self.mdsData)
         # Create the main application instance
 
@@ -474,7 +406,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         qp.setPen(QtGui.QPen(QtGui.QColor(0,255,0,25), 3))
         i = 0
         j = 0
-        array = self.algs.imgs_segmentation[self.image_path]
+        array = self.algs.images_segmented[self.image_path]
         print(array)
         lengthy = len(array)
         lengthx = len(array[0])
@@ -492,10 +424,89 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()), n_init= self.n_init.value())
         self.algs.compute_edge_uncertainties()
         self.algs.compute_node_uncertainties()
-        
 
+    def disable_buttons(self):
+        self.superpixelButton.setDisabled(True)
+        self.histogramButton.setDisabled(True)
+        self.histogramRadioButton.setDisabled(True)
+        self.graph_button.setDisabled(True)
+        self.GMMButton.setDisabled(True)
+        self.graphcutButton.setDisabled(True)
+        self.kmeansButton.setDisabled(True)
+        self.clearMarkingsButton.setDisabled(True)
 
+    def enable_buttons(self, option):
+        if option > 0:
+            self.superpixelButton.setEnabled(True)
+            self.clearMarkingsButton.setEnabled(True)
+        if option > 1:
+            self.histogramButton.setEnabled(True)
+        if option > 3:
+            self.histogramRadioButton.setEnabled(True)
+            self.graph_button.setEnabled(True)
+            self.GMMButton.setEnabled(True)
+            self.kmeansButton.setEnabled(True)
+        if option > 4:
+            self.graphcutButton.setEnabled(True)
 
+    def change_features(self):
+        self.colorLabel1.setHidden(True)
+        self.colorLabel2.setHidden(True)
+        self.colorLabel3.setHidden(True)
+        self.colorLabel4.setHidden(True)
+        self.HHist.setHidden(True)
+        self.SHist.setHidden(True)
+        self.HSHHist.setHidden(True)
+        self.HSSHist.setHidden(True)
+        self.siftlabel.setHidden(True)
+        self.siftKeyPoint.setHidden(True)
+        self.entropyLabel_1.setHidden(True)
+        self.entropyLabel_2.setHidden(True)
+        self.HentropyCheckBox.setHidden(True)
+        self.SentropyCheckBox.setHidden(True)
+        self.windowHogLabel.setHidden(True)
+        self.winSize.setHidden(True)
+        self.blockHogLabel.setHidden(True)
+        self.blockSize.setHidden(True)
+        self.blockStrideHogLabel.setHidden(True)
+        self.blockStride.setHidden(True)
+        self.cellHogLabel.setHidden(True)
+        self.cellSize.setHidden(True)
+        self.binsHogLabel.setHidden(True)
+        self.hogBins.setHidden(True)
+
+        currentIndex = self.featureSelected.currentText()
+        print(currentIndex)
+
+        if currentIndex == "Hue":
+            self.colorLabel1.setVisible(True)
+            self.HHist.setVisible(True)
+            self.entropyLabel_1.setVisible(True)
+            self.HentropyCheckBox.setVisible(True)
+        if currentIndex == "Saturation":
+            self.colorLabel2.setVisible(True)
+            self.SHist.setVisible(True)
+            self.entropyLabel_2.setVisible(True)
+            self.SentropyCheckBox.setVisible(True)
+        if currentIndex == "Hue x Saturation":
+            self.colorLabel3.setVisible(True)
+            self.colorLabel4.setVisible(True)
+            self.HSSHist.setVisible(True)
+            self.HSHHist.setVisible(True)
+        if currentIndex ==  "Sift":
+            self.siftlabel.setVisible(True)
+            self.siftKeyPoint.setVisible(True)
+        if currentIndex == "Hog":
+            self.windowHogLabel.setVisible(True)
+            self.winSize.setVisible(True)
+            self.blockHogLabel.setVisible(True)
+            self.blockSize.setVisible(True)
+            self.blockStrideHogLabel.setVisible(True)
+            self.blockStride.setVisible(True)
+            self.cellHogLabel.setVisible(True)
+            self.cellSize.setVisible(True)
+            self.binsHogLabel.setVisible(True)
+            self.hogBins.setVisible(True)
 
 
 if __name__ == '__main__':

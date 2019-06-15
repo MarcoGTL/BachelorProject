@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1072</width>
-    <height>952</height>
+    <width>1177</width>
+    <height>942</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,6 +36,13 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Clustering</string>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_11">
          <property name="text">
@@ -107,6 +114,9 @@
           </item>
           <item row="4" column="0">
            <widget class="QPushButton" name="superpixelButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Calculate superpixels</string>
             </property>
@@ -158,202 +168,7 @@
          </item>
         </widget>
        </item>
-       <item row="5" column="0">
-        <widget class="QFrame" name="frame_8">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_12">
-          <item row="3" column="0">
-           <widget class="QLabel" name="siftlabel">
-            <property name="text">
-             <string>keypoint size</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QSpinBox" name="siftSpinBox">
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="value">
-             <number>32</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="colorlabel2">
-            <property name="text">
-             <string>bins_S</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
-           <widget class="QPushButton" name="histogramButton">
-            <property name="text">
-             <string>Calculate histograms</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="SSpinBox">
-            <property name="value">
-             <number>20</number>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QFrame" name="frame_2">
-            <property name="styleSheet">
-             <string notr="true">border:0</string>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QSpinBox" name="HspinBox">
-            <property name="minimum">
-             <number>2</number>
-            </property>
-            <property name="maximum">
-             <number>360</number>
-            </property>
-            <property name="value">
-             <number>20</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="colorlabel1">
-            <property name="text">
-             <string>bins_H</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QPushButton" name="pushButton">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="9" column="0">
-        <widget class="QFrame" name="kmeansFrame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_17">
-          <item row="1" column="0">
-           <widget class="QPushButton" name="kmeansButton">
-            <property name="text">
-             <string>kmeans clustering</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="kclustervalue">
-            <property name="minimum">
-             <number>2</number>
-            </property>
-            <property name="maximum">
-             <number>12</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>Clusters</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Clustering</string>
-         </property>
-        </widget>
-       </item>
        <item row="8" column="0">
-        <widget class="QFrame" name="spectralFrame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_9">
-          <item row="1" column="0">
-           <widget class="QPushButton" name="spectralButton">
-            <property name="text">
-             <string>Spectral clustering</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="Sclustervalue">
-            <property name="minimum">
-             <number>2</number>
-            </property>
-            <property name="maximum">
-             <number>12</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Clusters</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QComboBox" name="extractionBox">
-         <item>
-          <property name="text">
-           <string>Color</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>hsv</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Sift</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="7" column="0">
         <widget class="QFrame" name="graphFrame">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
@@ -362,32 +177,6 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
-          <item row="9" column="0" colspan="2">
-           <widget class="QFrame" name="frame_9">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_18">
-             <item row="0" column="0">
-              <widget class="QRadioButton" name="bwRadioButton">
-               <property name="text">
-                <string>black white mode</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QRadioButton" name="bRadioButton">
-               <property name="text">
-                <string>border mode</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
           <item row="5" column="0" colspan="2">
            <widget class="QFrame" name="frame_6">
             <property name="frameShape">
@@ -414,17 +203,13 @@
             </layout>
            </widget>
           </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="label_12">
-            <property name="text">
-             <string>pairwise term scale</string>
+          <item row="7" column="0">
+           <widget class="QDoubleSpinBox" name="doubleSpinBox">
+            <property name="decimals">
+             <number>5</number>
             </property>
-           </widget>
-          </item>
-          <item row="4" column="0" colspan="2">
-           <widget class="QPushButton" name="pushButton_2">
-            <property name="text">
-             <string>Compute GMM and uncertainties</string>
+            <property name="maximum">
+             <double>999999999.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -441,25 +226,42 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QSpinBox" name="componentMin">
-            <property name="value">
-             <number>5</number>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Component range</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QPushButton" name="GMMButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Compute GMM and uncertainties</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0" colspan="2">
+           <widget class="QPushButton" name="graphcutButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Graph cut</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
            <widget class="QSpinBox" name="componentMax"/>
           </item>
-          <item row="6" column="1">
-           <widget class="QLabel" name="label_13">
-            <property name="text">
-             <string>scale parameters</string>
+          <item row="1" column="0">
+           <widget class="QSpinBox" name="componentMin">
+            <property name="value">
+             <number>5</number>
             </property>
            </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QSpinBox" name="n_init"/>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_6">
@@ -468,27 +270,420 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QLabel" name="label_7">
+          <item row="6" column="1">
+           <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>Component range</string>
+             <string>scale parameters</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="0">
-           <widget class="QDoubleSpinBox" name="doubleSpinBox">
-            <property name="decimals">
-             <number>5</number>
+          <item row="6" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>pairwise term scale</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0" colspan="2">
+           <widget class="QFrame" name="frame_9">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_18">
+             <item row="0" column="0">
+              <widget class="QRadioButton" name="bwRadioButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>black white mode</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QRadioButton" name="bRadioButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>border mode</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QSpinBox" name="n_init"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QFrame" name="kmeansFrame">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_17">
+          <item row="1" column="0">
+           <widget class="QPushButton" name="kmeansButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>kmeans clustering</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="kclustervalue">
+            <property name="minimum">
+             <number>2</number>
             </property>
             <property name="maximum">
-             <double>999999999.000000000000000</double>
+             <number>12</number>
             </property>
            </widget>
           </item>
-          <item row="8" column="0" colspan="2">
-           <widget class="QPushButton" name="graphcomputeButton">
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_10">
             <property name="text">
-             <string>Graph cut</string>
+             <string>Clusters</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QFrame" name="frame_2">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_19">
+          <item row="0" column="2">
+           <widget class="QCheckBox" name="Hog">
+            <property name="text">
+             <string>Hog</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QCheckBox" name="HueSat">
+            <property name="text">
+             <string>Hue x Saturation</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="RGB">
+            <property name="text">
+             <string>RGB</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="Saturation">
+            <property name="text">
+             <string>Saturation</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="HSV">
+            <property name="text">
+             <string>HSV</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QCheckBox" name="Sift">
+            <property name="text">
+             <string>Sift</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="Hue">
+            <property name="text">
+             <string>Hue</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>Current:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1" colspan="2">
+           <widget class="QComboBox" name="featureSelected">
+            <item>
+             <property name="text">
+              <string>RGB</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>HSV</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Hue</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Saturation</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Hue x Saturation</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sift</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Hog</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string/>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QFrame" name="frame_8">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_12">
+          <item row="5" column="0">
+           <widget class="QLabel" name="colorLabel2">
+            <property name="text">
+             <string>bins_S</string>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="1">
+           <widget class="QLabel" name="cellHogLabel">
+            <property name="text">
+             <string>Cell size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="0">
+           <widget class="QSpinBox" name="hogBins"/>
+          </item>
+          <item row="17" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="0">
+           <widget class="QLabel" name="binsHogLabel">
+            <property name="text">
+             <string>Hog bins</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="1">
+           <widget class="QSpinBox" name="cellSize"/>
+          </item>
+          <item row="11" column="1">
+           <widget class="QLabel" name="blockHogLabel">
+            <property name="text">
+             <string>Block size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="0">
+           <widget class="QSpinBox" name="winSize"/>
+          </item>
+          <item row="14" column="0">
+           <widget class="QSpinBox" name="blockStride"/>
+          </item>
+          <item row="12" column="1">
+           <widget class="QSpinBox" name="blockSize"/>
+          </item>
+          <item row="18" column="1">
+           <widget class="QPushButton" name="graph_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>MDS graph</string>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="0">
+           <widget class="QLabel" name="blockStrideHogLabel">
+            <property name="text">
+             <string>Block Stride</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="siftlabel">
+            <property name="text">
+             <string>keypoint size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QSpinBox" name="HHist">
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="HSSHist">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="entropyLabel_1">
+            <property name="text">
+             <string>Enable Entropy</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QSpinBox" name="SHist">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="entropyLabel_2">
+            <property name="text">
+             <string>Enable Entropy</string>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="0">
+           <widget class="QPushButton" name="histogramButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Calculate histograms</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="QSpinBox" name="siftKeyPoint">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>32</number>
+            </property>
+           </widget>
+          </item>
+          <item row="11" column="0">
+           <widget class="QLabel" name="windowHogLabel">
+            <property name="text">
+             <string>Detection window size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="colorLabel1">
+            <property name="text">
+             <string>bins_H</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QCheckBox" name="SentropyCheckBox">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QSpinBox" name="HSHHist">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QCheckBox" name="HentropyCheckBox">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="colorLabel3">
+            <property name="text">
+             <string>bins_H</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="colorLabel4">
+            <property name="text">
+             <string>bins_S</string>
             </property>
            </widget>
           </item>
@@ -519,10 +714,59 @@
       </layout>
      </widget>
     </item>
+    <item row="2" column="1" colspan="2">
+     <widget class="QFrame" name="frame_4">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>350</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QScrollArea" name="scrollArea_4">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents_4">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>768</width>
+            <height>93</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_24">
+           <item row="0" column="0">
+            <widget class="QListWidget" name="listWidget">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+          <zorder>listWidget</zorder>
+          <zorder>listWidget</zorder>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
     <item row="0" column="1">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="drawTab">
        <attribute name="title">
@@ -539,8 +783,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>533</width>
-             <height>733</height>
+             <width>595</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
@@ -572,8 +816,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>533</width>
-             <height>733</height>
+             <width>595</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_16">
@@ -594,6 +838,34 @@
        <attribute name="title">
         <string>Uncertainty</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_23">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="scrollArea_5">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_5">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>595</width>
+             <height>723</height>
+            </rect>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_22">
+            <item row="0" column="0">
+             <widget class="QLabel" name="uncertaintyImage">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="resultsTab">
        <attribute name="title">
@@ -610,8 +882,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>533</width>
-             <height>733</height>
+             <width>595</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_14">
@@ -630,34 +902,6 @@
       </widget>
      </widget>
     </item>
-    <item row="2" column="1" colspan="2">
-     <widget class="QFrame" name="frame_4">
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>350</height>
-       </size>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
-        <widget class="QListWidget" name="listWidget">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
     <item row="0" column="2">
      <widget class="QFrame" name="frame_3">
       <property name="maximumSize">
@@ -673,38 +917,210 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_13">
-       <item row="1" column="0">
-        <widget class="QRadioButton" name="bgRadioButton">
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_29">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
          <property name="text">
-          <string>Background</string>
+          <string>progress box:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QPushButton" name="pushButton_3">
+         <property name="text">
+          <string>Export settings</string>
          </property>
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QRadioButton" name="fgRadioButton">
-         <property name="text">
-          <string>Foreground</string>
+        <widget class="QLabel" name="label_28">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
          </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QPushButton" name="clearMarkingsButton">
          <property name="text">
-          <string>clear markings</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QRadioButton" name="radioButton">
-         <property name="text">
-          <string>Eraser</string>
+          <string>Marking tools:</string>
          </property>
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QPushButton" name="markingsButton">
+        <widget class="QFrame" name="frame_12">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_9">
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="drawRadioButton">
+            <property name="text">
+             <string>Draw mode</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QRadioButton" name="histogramRadioButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Histogram mode</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QFrame" name="frame_10">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>360</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_20">
+          <item row="5" column="0">
+           <widget class="QPushButton" name="clearMarkingsButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>clear markings</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QSpinBox" name="spinBox"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QRadioButton" name="radioButton">
+            <property name="text">
+             <string>Eraser</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_21">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Eraser Size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QRadioButton" name="bgRadioButton">
+            <property name="text">
+             <string>Background</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="fgRadioButton">
+            <property name="text">
+             <string>Foreground</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QPushButton" name="pushButton_4">
          <property name="text">
-          <string>Set Markings</string>
+          <string>Import Settings</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QFrame" name="frame_11">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_21">
+          <item row="3" column="0">
+           <widget class="QLabel" name="markingStatus">
+            <property name="text">
+             <string>markingsStatus</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_26">
+            <property name="text">
+             <string>clustering:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="superpixelStatus">
+            <property name="text">
+             <string>set</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_23">
+            <property name="text">
+             <string>Markings:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>Superpixels:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="clusteringStatus">
+            <property name="text">
+             <string>clusteringStatus</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_9">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>superpixel setting:</string>
          </property>
         </widget>
        </item>
@@ -718,7 +1134,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1072</width>
+     <width>1177</width>
      <height>25</height>
     </rect>
    </property>

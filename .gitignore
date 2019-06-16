@@ -2,7 +2,6 @@ algorithms/.idea/
 algorithms/venv/
 algorithms/__pycache__/
 gui/.idea/
-gui/venv/
 gui/__pycache__/
 algorithms/thing.py
 .idea

@@ -129,9 +129,9 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             if self.image_path in self.algs.images_cosegmented:
                 if self.clusteringBox.currentIndex() == 0:
                     self.draw_results()
-                if self.clusteringBox.currentIndex() == 1:
+                elif self.clusteringBox.currentIndex() == 1:
                     self.draw_clusters()
-                if self.clusteringBox.currentIndex() == 2:
+                elif self.clusteringBox.currentIndex() == 2:
                     self.draw_clusters()
 
 

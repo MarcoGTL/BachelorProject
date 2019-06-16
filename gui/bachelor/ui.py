@@ -107,7 +107,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def choose_image(self):
         if self.listWidget.currentItem() is not None:
-            index = self.treeView.currentIndex()
             self.image_path = self.currentFolder + '/' + self.selectedFolder + '/' + self.listWidget.currentItem().text()
             print(self.image_path)
             pixmap = QtGui.QPixmap(self.image_path)
@@ -119,6 +118,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.superImage.mouseMoveEvent = self.mov
             self.superImage.mouseReleaseEvent = self.releasemov
             self.superpixelButton.setEnabled(True)
+            self.clearMarkingsButton.setEnabled(True)
             if self.image_path not in self.foreground:
                 self.foreground[self.image_path] = []
                 self.background[self.image_path] = []
@@ -142,7 +142,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.draw_bounds()
 
     def movStart(self, event):
-        self.image.update()
         x = event.pos().x()
         y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
         if y < 0 or x < 0:
@@ -154,14 +153,13 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def savePoint(self, x, y):
         if (x, y) in self.foreground[self.image_path]:
-            print("hello")
             self.foreground[self.image_path].remove((x, y))
-        if (x, y) in self.background:
+        elif (x, y) in self.background:
             self.background[self.image_path].remove((x, y))
 
         if self.pencil == 1:
             self.background[self.image_path].append((x, y))
-        if self.pencil == 2:
+        elif self.pencil == 2:
             self.foreground[self.image_path].append((x, y))
 
     def mov(self, event):

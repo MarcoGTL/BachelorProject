@@ -62,7 +62,7 @@ class Pipeline:
         images_superpixels_uncertainties_node (dict of str: [float]): List of node uncertainty scores of each superpixel
         images_superpixels_uncertainties_edge (dict of str: [float]): List of edge uncertainty scores of each superpixel
         images_superpixels_uncertainties_graph_cut (dict of str: [float]): List of uncertainty scores of each superpixel
-            based on difference in energy between given label and its opposite.
+            based on difference in energy between given label and its oppx  osite.
 
         images_cosegmented (dict of str: ndarray): 2D array of numpy.int32 values indicating for every pixel its label
             after cosegmentation.

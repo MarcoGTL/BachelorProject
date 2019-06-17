@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1177</width>
+    <width>1185</width>
     <height>942</height>
    </rect>
   </property>
@@ -168,7 +168,7 @@
          </item>
         </widget>
        </item>
-       <item row="7" column="0">
+       <item row="8" column="0">
         <widget class="QFrame" name="graphFrame">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
@@ -272,7 +272,7 @@
          </layout>
         </widget>
        </item>
-       <item row="8" column="0">
+       <item row="9" column="0">
         <widget class="QFrame" name="kmeansFrame">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
@@ -426,6 +426,217 @@
          </layout>
         </widget>
        </item>
+       <item row="6" column="0">
+        <widget class="QFrame" name="frame_8">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_12">
+          <item row="5" column="0">
+           <widget class="QLabel" name="colorLabel2">
+            <property name="text">
+             <string>bins_S</string>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="1">
+           <widget class="QLabel" name="cellHogLabel">
+            <property name="text">
+             <string>Cell size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="0">
+           <widget class="QSpinBox" name="hogBins"/>
+          </item>
+          <item row="17" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="0">
+           <widget class="QLabel" name="binsHogLabel">
+            <property name="text">
+             <string>Hog bins</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="1">
+           <widget class="QSpinBox" name="cellSize"/>
+          </item>
+          <item row="11" column="1">
+           <widget class="QLabel" name="blockHogLabel">
+            <property name="text">
+             <string>Block size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="0">
+           <widget class="QSpinBox" name="winSize"/>
+          </item>
+          <item row="14" column="0">
+           <widget class="QSpinBox" name="blockStride"/>
+          </item>
+          <item row="12" column="1">
+           <widget class="QSpinBox" name="blockSize"/>
+          </item>
+          <item row="18" column="1">
+           <widget class="QPushButton" name="graph_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>MDS graph</string>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="0">
+           <widget class="QLabel" name="blockStrideHogLabel">
+            <property name="text">
+             <string>Block Stride</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="siftlabel">
+            <property name="text">
+             <string>keypoint size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QSpinBox" name="HHist">
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="HSSHist">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="entropyLabel_1">
+            <property name="text">
+             <string>Enable Entropy</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QSpinBox" name="SHist">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="entropyLabel_2">
+            <property name="text">
+             <string>Enable Entropy</string>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="0">
+           <widget class="QPushButton" name="histogramButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Calculate histograms</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="QSpinBox" name="siftKeyPoint">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>32</number>
+            </property>
+           </widget>
+          </item>
+          <item row="11" column="0">
+           <widget class="QLabel" name="windowHogLabel">
+            <property name="text">
+             <string>Detection window size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="colorLabel1">
+            <property name="text">
+             <string>bins_H</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QCheckBox" name="SentropyCheckBox">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QSpinBox" name="HSHHist">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>360</number>
+            </property>
+            <property name="value">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QCheckBox" name="HentropyCheckBox">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="colorLabel3">
+            <property name="text">
+             <string>bins_H</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="colorLabel4">
+            <property name="text">
+             <string>bins_S</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
@@ -475,8 +686,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>781</width>
-            <height>124</height>
+            <width>776</width>
+            <height>93</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_24">
@@ -491,8 +702,6 @@
             </widget>
            </item>
           </layout>
-          <zorder>listWidget</zorder>
-          <zorder>listWidget</zorder>
          </widget>
         </widget>
        </item>
@@ -519,8 +728,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>595</width>
-             <height>672</height>
+             <width>603</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
@@ -552,8 +761,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>595</width>
-             <height>672</height>
+             <width>603</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_16">
@@ -585,8 +794,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>595</width>
-             <height>672</height>
+             <width>603</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_22">
@@ -618,8 +827,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>595</width>
-             <height>672</height>
+             <width>603</width>
+             <height>723</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_14">
@@ -836,10 +1045,14 @@
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QSpinBox" name="spinBox"/>
+           <widget class="QSpinBox" name="markSize">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+           </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QRadioButton" name="radioButton">
+           <widget class="QRadioButton" name="eRadioButton">
             <property name="text">
              <string>Eraser</string>
             </property>
@@ -854,7 +1067,7 @@
              </size>
             </property>
             <property name="text">
-             <string>Eraser Size</string>
+             <string>pen Size</string>
             </property>
            </widget>
           </item>
@@ -895,9 +1108,9 @@
          </property>
          <layout class="QGridLayout" name="gridLayout_21">
           <item row="3" column="0">
-           <widget class="QLabel" name="markingStatus">
+           <widget class="QLabel" name="extractionStatus">
             <property name="text">
-             <string>Not set</string>
+             <string>Not calculated</string>
             </property>
            </widget>
           </item>
@@ -911,14 +1124,14 @@
           <item row="1" column="0">
            <widget class="QLabel" name="superpixelStatus">
             <property name="text">
-             <string>Not set</string>
+             <string>Not calculated</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_23">
             <property name="text">
-             <string>Markings:</string>
+             <string>Extractions</string>
             </property>
            </widget>
           </item>
@@ -932,7 +1145,7 @@
           <item row="5" column="0">
            <widget class="QLabel" name="clusteringStatus">
             <property name="text">
-             <string>Not set</string>
+             <string>Not calculated</string>
             </property>
            </widget>
           </item>
@@ -963,7 +1176,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1177</width>
+     <width>1185</width>
      <height>25</height>
     </rect>
    </property>

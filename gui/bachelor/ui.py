@@ -6,6 +6,7 @@ from algorithms import pipeline
 from algorithms import MDS
 import os
 import sys
+from itertools import product
 import numpy as np
 import pyqtgraph as pg
 from skimage.segmentation import find_boundaries
@@ -46,6 +47,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         self.fgRadioButton.clicked.connect(self.currentPencil)
         self.bgRadioButton.clicked.connect(self.currentPencil)
+        self.eRadioButton.clicked.connect(self.currentPencil)
 
         self.mdsData = []
         self.point = (-1, -1)
@@ -73,11 +75,12 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.treeView.setSortingEnabled(True)
 
     def context_menu(self):
-        menu = QtWidgets.QMenu()
-        open = menu.addAction("select folder")
-        open.triggered.connect(self.select_folder)
-        cursor = QtGui.QCursor()
-        menu.exec_(cursor.pos())
+        if self.model.isDir(self.treeView.currentIndex()):
+            menu = QtWidgets.QMenu()
+            open = menu.addAction("select folder")
+            open.triggered.connect(self.select_folder)
+            cursor = QtGui.QCursor()
+            menu.exec_(cursor.pos())
 
     def select_folder(self):
         self.listWidget.clear()
@@ -142,14 +145,23 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.draw_bounds()
 
     def movStart(self, event):
-        x = event.pos().x()
-        y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
-        if y < 0 or x < 0:
-            return
+            x = event.pos().x()
+            y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
+            if y < 0 or x < 0:
+                return
+            if self.markSize.value() == 1 or not self.eRadioButton.isChecked():
+                self.savePoint(x, y)
+                print("hello")
+            else:
+                points = [[point[0]+x, point[1]+y] for point in self.circle_radius(self.markSize.value())]
+                for point in points:
+                    if not (point[0] < 0 or point[1] < 0 or point[0] > self.image.width() or point[1] > self.image.height()):
+                        self.savePoint(point[0], point[1])
+            self.point = (x, y)
+            self.draw_markings()
 
-        self.savePoint(x, y)
-        self.point = (x, y)
-        self.draw_markings()
+
+
 
     def savePoint(self, x, y):
         if (x, y) in self.foreground[self.image_path]:
@@ -190,18 +202,41 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def releasemov(self, event):
         self.point = (-1, -1)
 
+    def circle_radius(self,radius):
+        for x, y in product(range(int(radius) + 1), repeat=2):
+            if x ** 2 + y ** 2 <= radius ** 2:
+                yield from [[x, y], [x, -y], [-x, y], [-x, -y]]
+
+
+
     def save_linex(self, x1, x2, y1, y2):
         slope = (y1 - y2) / (x1 - x2)
         i = x1 + 1
         while i <= x2:
-            self.savePoint(i, round(y1 + slope * (i - x1)))
+            x = i
+            y = round(y1 + slope * (i - x1))
+            if self.markSize.value() == 1 or not self.eRadioButton.isChecked():
+             self.savePoint(x, y)
+            else:
+                points = [[point[0] + x, point[1] + y] for point in self.circle_radius(self.markSize.value())]
+                for point in points:
+                    if not (point[0] < 0 or point[1] < 0 or point[0] > self.image.width() or point[1] > self.image.height()):
+                        self.savePoint(point[0], point[1])
             i = i + 1
 
     def save_liney(self, x1, x2, y1, y2):
         slope = (x1 - x2) / (y1 - y2)
         i = y1 + 1
         while i <= y2:
-            self.savePoint(round(x1 + slope * (i - y1)), i)
+            x = round(x1 + slope * (i - y1))
+            y = i
+            if self.markSize.value() == 1 or not self.eRadioButton.isChecked():
+              self.savePoint(x, y)
+            else:
+                points = [[point[0] + x, point[1] + y] for point in self.circle_radius(self.markSize.value())]
+                for point in points:
+                    if not (point[0] < 0 or point[1] < 0 or point[0] > self.image.width() or point[1] > self.image.height()):
+                        self.savePoint(point[0], point[1])
             i = i + 1
 
     def draw_markings(self):
@@ -209,6 +244,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.image.setPixmap(pixmap)
         qp = QtGui.QPainter(self.image.pixmap())
         qp.setPen(QtGui.QPen(QtCore.Qt.blue, 1))
+        print(self.foreground)
         for x in self.background[self.image_path]:
             qp.drawPoint(x[0], x[1])
 
@@ -241,11 +277,17 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def calculate_superpixels(self):
         self.algs.compute_superpixels(self.superpixelSpinBox.value(), self.compactnessSpinBox.value(),
                                       self.iterationsSpinBox.value(), self.sigmaSpinBox.value())
+        print(self.algs.images_superpixels)
         self.algs.compute_neighbors()
         self.algs.compute_centers()
         self.draw_bounds()
         self.disable_buttons()
         self.enable_buttons(2)
+        self.superpixelStatus.setText("Calculated")
+        if self.extractionStatus.text() == "Calculated":
+            self.extractionStatus.setText("Recalculation needed")
+        if self.clusteringStatus.text() == "Calculated":
+            self.clusteringStatus.setText("Recalculation needed")
 
     def set_histograms(self):
         self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(),
@@ -270,7 +312,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             if self.algs.images_segmented[self.image_path][x[1]][x[0]] not in foreground:
                 foreground.append(self.algs.images_segmented[self.image_path][x[1]][x[0]])
         for y in self.background[self.image_path]:
-            if self.algs.images_segmented[self.image_path][y[1]][y[0]] not in self.background:
+            if self.algs.images_segmented[self.image_path][y[1]][y[0]] not in background:
                 background.append(self.algs.images_segmented[self.image_path][y[1]][y[0]])
         self.algs.set_fg_segments(self.image_path, foreground)
         self.algs.set_bg_segments(self.image_path, background)
@@ -370,7 +412,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             j = 0
             i = i + 1
         self.superImage.update()
-        print("hello")
 
     def clustering_options(self):
         if self.clusteringBox.currentIndex() == 0:
@@ -384,7 +425,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         self.mdsData = MDS.mds_transform(self.algs.images_superpixels_feature_vector[self.image_path])
-        print(self.mdsData)
         # Create the main application instance
 
         # Create the view
@@ -401,25 +441,20 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         # Convert data array into a list of dictionaries with the x,y-coordinates
         pos = [{'pos': x} for x in self.mdsData]
-        print(pos)
         scatter.setData(pos)
 
     def on_click_graph(self, graph, points):
         self.graphMarked.clear()
         for point in points:
-            print([point.pos()[0], point.pos()[1]])
             self.graphMarked.append(np.where([point.pos()[0], point.pos()[1]] == self.mdsData)[0][0])
-        print(self.graphMarked)
         self.draw_bounds()
         qp = QtGui.QPainter(self.superImage.pixmap())
         qp.setPen(QtGui.QPen(QtGui.QColor(0, 255, 0, 25), 3))
         i = 0
         j = 0
         array = self.algs.images_segmented[self.image_path]
-        print(array)
         lengthy = len(array)
         lengthx = len(array[0])
-        print(lengthy, lengthx)
         while i < lengthy:
             while j < lengthx:
                 if array[i][j] in self.graphMarked:
@@ -431,12 +466,49 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def set_gmm(self):
         self.set_markings()
-        self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()),
-                              n_init=self.n_init.value())
-        self.algs.compute_edge_uncertainties()
-        self.algs.compute_node_uncertainties()
-        self.disable_buttons()
-        self.enable_buttons(4)
+        if len(self.algs.images_superpixels_foreground[self.image_path]) > 0 and len(self.algs.images_superpixels_background[self.image_path]) > 0 and (len(self.algs.images_superpixels_background[self.image_path])+len(self.algs.images_superpixels_foreground[self.image_path]) )>= (self.componentMax.value()):
+            self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()),
+                                  n_init=self.n_init.value())
+            self.algs.compute_edge_uncertainties()
+            self.algs.compute_node_uncertainties()
+            self.draw_uncertainties()
+            self.disable_buttons()
+            self.enable_buttons(4)
+        else:
+            msg = QtWidgets.QMessageBox()
+            msg.setIcon(QtWidgets.QMessageBox.Critical)
+            msg.setText("Error")
+            msg.setInformativeText('Foreground and background must be marked')
+            msg.setWindowTitle("Error")
+            msg.exec_()
+
+    def draw_uncertainties(self):
+        pixmap = QtGui.QPixmap(self.image_path)
+        if self.edgeRadioButton.isChecked():
+            x = self.algs.images_superpixels_uncertainties_edge
+        elif self.nodeRadioButton.isChecked():
+            x = self.algs.images_superpixels_uncertainties_node
+        elif self.nodeRadioButton.isChecked():
+            x = self.algs.images_superpixels_uncertainties_graph_cut
+        self.uncertaintyImage.setPixmap(pixmap)
+        qp = QtGui.QPainter(self.uncertaintyImage.pixmap())
+        i = 0
+        j = 0
+        lengthy = pixmap.height()
+        lengthx = pixmap.width()
+        print(lengthy, lengthx)
+        while i < lengthy:
+            while j < lengthx:
+                color = round(x[self.image_path][self.algs.images_segmented[self.image_path][i][j]]*255)
+                if color < 128:
+                    qp.setPen(QtGui.QColor(0,0,255-color))
+                else:
+                    qp.setPen(QtGui.QColor(255-color, 0, 0))
+                qp.drawPoint(j, i)
+                j = j + 1
+            j = 0
+            i = i + 1
+        self.uncertaintyImage.update()
 
     def disable_buttons(self):
         self.superpixelButton.setDisabled(True)
@@ -502,7 +574,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.hogBins.setHidden(True)
 
         currentIndex = self.featureSelected.currentText()
-        print(currentIndex)
 
         if currentIndex == "Hue":
             self.colorLabel1.setVisible(True)

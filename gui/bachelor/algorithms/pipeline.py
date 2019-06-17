@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from featureextraction import FeatureExtraction
-import histograms
+from algorithms.featureextraction import FeatureExtraction
+import algorithms.histograms
 from os import listdir, path
 import maxflow
 from skimage.segmentation import slic, mark_boundaries, find_boundaries
@@ -23,7 +23,7 @@ class Pipeline:
     At the end of this file is a main function that demonstrates how this pipeline can be used.
 
     Required Packages:
-        opencv-contrib-python (Using 3.4.2.17, newer versions do not include SIFT)
+        opencv-contrib-python (Using version 3.4.2.17, as newer versions do not include SIFT)
         numpy
         PyMaxflow
         scikit-image

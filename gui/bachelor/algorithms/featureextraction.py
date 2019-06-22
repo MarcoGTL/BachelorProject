@@ -19,6 +19,7 @@ class FeatureExtraction:
             a numpy.uint8 grayvalue of the pixel.
     """
     def __init__(self, image_path: str):
+        print(image_path)
         self.image_bgr = cv2.imread(image_path, flags=cv2.IMREAD_COLOR)
         self.image_hsv = cv2.cvtColor(self.image_bgr, cv2.COLOR_BGR2HSV)
         self.image_gray = cv2.cvtColor(self.image_bgr, cv2.COLOR_BGR2GRAY)
@@ -104,7 +105,7 @@ class FeatureExtraction:
         Returns: A SIFT descriptor as list of length 128
         """
         sift = cv2.xfeatures2d_SIFT.create()
-        kp = cv2.KeyPoint(coord_x, coord_y, kp_size, angle=-1)
+        kp = cv2.KeyPoint(x=coord_x, y=coord_y, _size=kp_size, _angle=-1)
         kp, desc = sift.compute(self.image_gray, [kp])
         return desc[0].tolist()
 

@@ -71,7 +71,6 @@ class Pipeline:
     def __init__(self, image_paths: [str]):
         self.images = image_paths
         self.images_feature_extraction = {img: FeatureExtraction(img) for img in self.images}
-
         self.images_segmented = dict.fromkeys(self.images)
         self.images_superpixels = dict.fromkeys(self.images)
         self.images_superpixels_neighbours = dict.fromkeys(self.images)

@@ -88,9 +88,9 @@ class Pipeline:
         self.gmm_foreground_bic = 0
         self.gmm_background_bic = 0
 
-        self.images_superpixels_uncertainties_node = dict()
-        self.images_superpixels_uncertainties_edge = dict()
-        self.images_superpixels_uncertainties_graph_cut = dict()
+        self.images_superpixels_uncertainties_node = dict.fromkeys(image_paths, [])
+        self.images_superpixels_uncertainties_edge = dict.fromkeys(image_paths, [])
+        self.images_superpixels_uncertainties_graph_cut = dict.fromkeys(image_paths, [])
 
         self.images_cosegmented = dict()
 

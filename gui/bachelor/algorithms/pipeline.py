@@ -68,6 +68,7 @@ class Pipeline:
             after cosegmentation.
 
     """
+
     def __init__(self, image_paths: [str]):
         self.images = image_paths
         self.images_feature_extraction = {img: FeatureExtraction(img) for img in self.images}
@@ -217,7 +218,8 @@ class Pipeline:
                     feature_vector += self.images_feature_extraction[img].sift(coord_xy[0], coord_xy[1], sift_kp_size)
                 if hog:
                     feature_vector += self.images_feature_extraction[img].hog(coord_xy[0], coord_xy[1], hog_winSize,
-                                                            hog_blockSize, hog_blockStride, hog_cellSize, hog_bins)
+                                                                              hog_blockSize, hog_blockStride,
+                                                                              hog_cellSize, hog_bins)
                 assert len(feature_vector) > 0, 'Feature vector needs to have at least one feature'
                 self.images_superpixels_feature_vector[img][superpixel] = np.asarray(feature_vector, dtype='float32')
 
@@ -234,9 +236,11 @@ class Pipeline:
             n_init (int): Number of restarts per number of components
         """
         # group the foreground and background superpixels' feature vectors in one list
-        feature_vectors_fg = [self.images_superpixels_feature_vector[img][fg_segment] for img in self.images for fg_segment
+        feature_vectors_fg = [self.images_superpixels_feature_vector[img][fg_segment] for img in self.images for
+                              fg_segment
                               in self.images_superpixels_foreground[img]]
-        feature_vectors_bg = [self.images_superpixels_feature_vector[img][bg_segment] for img in self.images for bg_segment
+        feature_vectors_bg = [self.images_superpixels_feature_vector[img][bg_segment] for img in self.images for
+                              bg_segment
                               in self.images_superpixels_background[img]]
 
         assert len(feature_vectors_fg) > 0, 'At least one superpixel needs to be marked as foreground'
@@ -257,13 +261,14 @@ class Pipeline:
         self.gmm_foreground, self.gmm_foreground_bic = find_best_gmm(feature_vectors_fg)
         self.gmm_background, self.gmm_background_bic = find_best_gmm(feature_vectors_bg)
 
-    def compute_node_uncertainties(self):
+    def compute_node_uncertainties(self, normalize=True):
         """
         Compute an uncertainty score for every superpixel based on entropy of node beliefs.
         The result is stored in images_superpixels_uncertainties_node
 
         Note: Requires compute_gmm.
         """
+        maximum_uncertainty = 0
         for img in self.images:
             self.images_superpixels_uncertainties_node[img] = np.zeros(len(self.images_superpixels[img]))
             fg_likelihoods = self.gmm_foreground.predict_proba(self.images_superpixels_feature_vector[img])
@@ -273,9 +278,18 @@ class Pipeline:
             # Normalize the likelihoods
             likelihoods = likelihoods / likelihoods.sum(axis=1)[:, np.newaxis]
             # Compute the entropies of the distributions as the node uncertainties
-            self.images_superpixels_uncertainties_node[img] = [entropy(dist) for dist in likelihoods]
+            for sp in self.images_superpixels[img]:
+                uncertainty = entropy(likelihoods[sp])
+                if uncertainty > maximum_uncertainty:
+                    maximum_uncertainty = uncertainty
+                self.images_superpixels_uncertainties_node[img][sp] = uncertainty
 
-    def compute_edge_uncertainties(self):
+        if normalize and maximum_uncertainty > 0:
+            for img in self.images:
+                self.images_superpixels_uncertainties_node[img] = [x / maximum_uncertainty for x in
+                                                                   self.images_superpixels_uncertainties_node[img]]
+
+    def compute_edge_uncertainties(self, normalize=True):
         """
         Compute an uncertainty score for every superpixel based on the entropy of the proportion of its K (=10) nearest
         neighbours of marked superpixels. The result is stored in images_superpixels_uncertainties_edge
@@ -283,9 +297,11 @@ class Pipeline:
         Note: Requires compute_gmm.
         """
         # group the foreground and background segments' feature vectors in one list
-        feature_vectors_fg = [self.images_superpixels_feature_vector[img][fg_segment] for img in self.images for fg_segment
+        feature_vectors_fg = [self.images_superpixels_feature_vector[img][fg_segment] for img in self.images for
+                              fg_segment
                               in self.images_superpixels_foreground[img]]
-        feature_vectors_bg = [self.images_superpixels_feature_vector[img][bg_segment] for img in self.images for bg_segment
+        feature_vectors_bg = [self.images_superpixels_feature_vector[img][bg_segment] for img in self.images for
+                              bg_segment
                               in self.images_superpixels_background[img]]
 
         num_fg_indices = len(feature_vectors_fg)
@@ -295,6 +311,7 @@ class Pipeline:
 
         neighbours = NearestNeighbors(n_neighbors=10, algorithm='auto').fit(feature_vectors)
 
+        maximum_uncertainty = 0
         for img in self.images:
             # Retrieve the indices of the nearest neighbours
             indices = neighbours.kneighbors(self.images_superpixels_feature_vector[img], return_distance=False)
@@ -304,10 +321,18 @@ class Pipeline:
             proportion_bg = np.sum(indices > num_fg_indices, axis=1) / 10
 
             # Compute the uncertainties as the entropy of the foreground/background proportions
-            self.images_superpixels_uncertainties_edge[img] = [entropy([proportion_fg[sp], proportion_bg[sp]])
-                                                               for sp in self.images_superpixels[img]]
+            for sp in self.images_superpixels[img]:
+                uncertainty = entropy([proportion_fg[sp], proportion_bg[sp]])
+                if uncertainty > maximum_uncertainty:
+                    maximum_uncertainty = uncertainty
+                self.images_superpixels_uncertainties_node[img][sp] = uncertainty
 
-    def perform_graph_cut(self, pairwise_term_scale=-np.infty, scale_parameter=1.0):
+        if normalize and maximum_uncertainty > 0:
+            for img in self.images:
+                self.images_superpixels_uncertainties_node[img] = [x / maximum_uncertainty for x in
+                                                                   self.images_superpixels_uncertainties_node[img]]
+
+    def perform_graph_cut(self, pairwise_term_scale=-np.infty, scale_parameter=1.0, normalize_uncertainties=True):
         """
         Segments every image using graph-cut. The graph built has nodes with energies based on GMM matching, and edges
         based on euclidean distance between neighbouring superpixels' feature vectors. The resulting cosegmentation is
@@ -322,6 +347,7 @@ class Pipeline:
             scale_parameter (float): Used to adjust the strength of the response in the pairwise term value
                 depending on distance.
         """
+        maximum_uncertainty = 0
         # perform graph-cut for every image
         for img in self.images:
             # Create a graph of N nodes with an estimate of 5 edges per node
@@ -361,8 +387,10 @@ class Pipeline:
                     # Create two edges between superpixel and its neighbor with cost based on
                     # euclidean distance between their feature vectors
                     fv_neighbor = self.images_superpixels_feature_vector[img][nbr]
-                    edges[sp][nbr] = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv, fv_neighbor))))
-                    edges[nbr][sp] = pairwise_term_scale * (np.e ** (- scale_parameter * abs(euclidean(fv_neighbor, fv))))
+                    edges[sp][nbr] = pairwise_term_scale * (
+                                np.e ** (- scale_parameter * abs(euclidean(fv, fv_neighbor))))
+                    edges[nbr][sp] = pairwise_term_scale * (
+                                np.e ** (- scale_parameter * abs(euclidean(fv_neighbor, fv))))
                     graph.add_edge(nodes[sp], nodes[nbr], edges[sp][nbr], edges[nbr][sp])
 
             graph.maxflow()
@@ -378,10 +406,17 @@ class Pipeline:
                 for nbr in self.images_superpixels_neighbours[img][sp]:
                     if graph_cut[sp] != graph_cut[nbr]:
                         energy_difference += abs(edges[sp][nbr]) + abs(edges[nbr][sp])
+                if energy_difference > maximum_uncertainty:
+                    maximum_uncertainty = energy_difference
                 self.images_superpixels_uncertainties_graph_cut[img][sp] = energy_difference
 
             # Get a bool mask of the pixels for a given selection of superpixel IDs
             self.images_cosegmented[img] = np.where(np.isin(self.images_segmented[img], np.nonzero(graph_cut)), 0, 1)
+
+        if normalize_uncertainties and maximum_uncertainty > 0:
+            for img in self.images:
+                self.images_superpixels_uncertainties_node[img] = [x / maximum_uncertainty for x in
+                                                                   self.images_superpixels_uncertainties_node[img]]
 
     def perform_k_means_clustering(self, num_clusters=2):
         """

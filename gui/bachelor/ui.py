@@ -13,15 +13,17 @@ from skimage.segmentation import find_boundaries
 from tooltips import set_tooltips
 from error import errormessage
 from compare_pixel import compare_pixel
+import xml.etree.ElementTree as ET
+
+
 colors = [[0, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255],
           [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0], [128, 0, 128],
           [0, 128, 128], [0, 0, 128]]
 
 
-
-class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
+class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def __init__(self):
-        super(MyFileBrowser, self).__init__()
+        super(mainUI, self).__init__()
         self.setupUi(self)
 
         self.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -35,15 +37,37 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.clearMarkingsButton.clicked.connect(self.clear_markings)
         self.histogramButton.clicked.connect(self.set_histograms)
         self.superpixelButton.clicked.connect(self.calculate_superpixels)
-        self.graphcutButton.clicked.connect(self.compute_cosegmentation)
+        self.graphcutButton.clicked.connect(self.compute_graph_cut)
         self.kmeansButton.clicked.connect(self.kmeans)
         self.graph_button.clicked.connect(self.create_graph)
         self.GMMButton.clicked.connect(self.set_gmm)
-        self.bwRadioButton.clicked.connect(self.draw_results)
-        self.bRadioButton.clicked.connect(self.draw_results)
+        self.bwRadioButton.clicked.connect(self.draw_graph_cut)
+        self.bRadioButton.clicked.connect(self.draw_graph_cut)
+        self.colorRadioButton.clicked.connect(self.draw_kmeans)
+        self.bwkRadioButton.clicked.connect(self.draw_kmeans)
         self.edgeRadioButton.clicked.connect(self.draw_uncertainties)
         self.graphRadioButton.clicked.connect(self.draw_uncertainties)
         self.nodeRadioButton.clicked.connect(self.draw_uncertainties)
+
+        self.gt_originalRadioButton.clicked.connect(self.draw_gt)
+        self.gt_overlapRadioButton.clicked.connect(self.draw_gt)
+
+        self.k1.stateChanged.connect(self.update_kmeans)
+        self.k2.stateChanged.connect(self.update_kmeans)
+        self.k3.stateChanged.connect(self.update_kmeans)
+        self.k4.stateChanged.connect(self.update_kmeans)
+        self.k5.stateChanged.connect(self.update_kmeans)
+        self.k6.stateChanged.connect(self.update_kmeans)
+        self.k7.stateChanged.connect(self.update_kmeans)
+        self.k8.stateChanged.connect(self.update_kmeans)
+        self.k9.stateChanged.connect(self.update_kmeans)
+        self.k10.stateChanged.connect(self.update_kmeans)
+        self.k11.stateChanged.connect(self.update_kmeans)
+        self.k12.stateChanged.connect(self.update_kmeans)
+        self.k13.stateChanged.connect(self.update_kmeans)
+        self.k14.stateChanged.connect(self.update_kmeans)
+        self.k15.stateChanged.connect(self.update_kmeans)
+        self.k16.stateChanged.connect(self.update_kmeans)
 
 
         self.featureSelected.currentIndexChanged.connect(self.change_features)
@@ -51,6 +75,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         self.clusteringBox.currentIndexChanged.connect(self.clustering_options)
         self.kmeansFrame.setHidden(True)
+
 
         self.fgRadioButton.clicked.connect(self.currentPencil)
         self.bgRadioButton.clicked.connect(self.currentPencil)
@@ -69,9 +94,9 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.image_path = ""
         self.graphMarked = []
         self.model = QtWidgets.QFileSystemModel()
-        self.results = "None"
+        self.result = "None"
         self.relpath = ""
-
+        self.change_clustering()
         self.change_features()
         self.populate()
         set_tooltips(self.superpixelCalculationLabel, self.superpixelQuantityLabel, self.iterationsLabel,
@@ -103,57 +128,75 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def select_gt(self):
         index = self.treeView.currentIndex()
-        file_path = self.model.filePath(index)
-        self.groundtruth[self.image_path] = file_path
-        self.draw_gt(file_path)
+        self.file_path = self.model.filePath(index)
+        self.groundtruth[self.image_path] = self.file_path
+        if self.result != "None":
+            self.gt_overlapRadioButton.setEnabled(True)
+        self.draw_gt()
+        self.gt_originalRadioButton.setEnabled(True)
 
-    def draw_gt(self,file_path):
-        pixmap = QtGui.QPixmap(file_path)
+    def draw_gt(self):
+        pixmap = QtGui.QPixmap(self.file_path)
 
         if self.image.pixmap().size() != pixmap.size():
             errormessage("Wrong gt selected", "Size of images do not match")
             return
 
-        self.groundtruth[self.image_path] = file_path
+        self.groundtruth[self.image_path] = self.file_path
 
         if self.gt_originalRadioButton.isChecked():
             self.compare_image.setPixmap(pixmap)
             self.compare_image.update()
         else:
-            qp = QtGui.QPainter(self.result_image.pixmap())
-            qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
-
-            gt = pixmap.toImage()
             self.compare_image.setPixmap(pixmap)
             self.compare_image.pixmap().fill(QtCore.Qt.black)
+            qp = QtGui.QPainter(self.compare_image.pixmap())
+            qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
+            gt = pixmap.toImage()
+
             results = self.algs.images_cosegmented[self.image_path]
 
             y = 0
             x = 0
+            print(gt.width(),gt.height())
+            wrong = 0
             if self.result == "kmeans":
-                table = [self.k1.isChecked(),self.k2.isChecked(),self.k3.isChecked(),self.k4.isChecked(),self.k5.isChecked(),self.k6.isChecked(),self.k7.isChecked(),self.k8.isChecked(),self.k9.isChecked(),self.k10.isChecked(),self.k11.isChecked(),self.k12.isChecked(),self.k13.isChecked(),self.k14.isChecked(),self.k15.isChecked(),self.k16.isChecked(),]
+                table = [self.k1.isChecked(), self.k2.isChecked(), self.k3.isChecked(), self.k4.isChecked(),
+                         self.k5.isChecked(), self.k6.isChecked(), self.k7.isChecked(), self.k8.isChecked(),
+                         self.k9.isChecked(), self.k10.isChecked(), self.k11.isChecked(), self.k12.isChecked(),
+                         self.k13.isChecked(), self.k14.isChecked(), self.k15.isChecked(), self.k16.isChecked(), ]
                 while y < gt.height():
                     while x < gt.width():
                         gtpixel = gt.pixelColor(x, y).getRgb()
                         compare = results[y][x]
-                        if compare_pixel(gtpixel=gt.pixelColor(x,y).getRgb(),resultpixel=table[compare]):
-                            qp.drawPoint(x,y)
+                        if compare_pixel(gtpixel=gt.pixelColor(x, y).getRgb(), resultpixel=table[compare]):
+                            qp.drawPoint(x, y)
+                        else:
+                            wrong = wrong + 1
                         x = x + 1
                     y = y + 1
+                    x = 0
             elif self.result == "graphcut":
                 while y < gt.height():
                     while x < gt.width():
                         gtpixel = gt.pixelColor(x, y).getRgb()
                         compare = results[y][x]
-                        if compare_pixel(gtpixel,compare):
-                            qp.drawPoint(x,y)
+                        if (gtpixel[0] != 0):
+                            print(gtpixel[0],gtpixel[1],gtpixel[2])
+                            print(compare)
+                        if compare_pixel(gtpixel, compare):
+                            print("im here")
+                            qp.drawPoint(x, y)
+                        else:
+                            wrong = wrong + 1
                         x = x + 1
                     y = y + 1
-
-
-
-
-
+                    x = 0
+            print(wrong)
+            right =((self.compare_image.pixmap().width() * self.compare_image.pixmap().height()) - wrong) / (self.compare_image.pixmap().width() * self.compare_image.pixmap().height())*100
+            print(right)
+            self.gtpercentage.setText(str(round(right)) + "%")
+            self.compare_image.update()
 
     def select_folder(self):
         self.listWidget.clear()
@@ -163,6 +206,9 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.groundtruth.clear()
         self.image_paths.clear()
         self.algs = pipeline.Pipeline([])
+        self.clusteringStatus.setText("Not calculated")
+        self.extractionStatus.setText("Not calculated")
+        self.superpixelStatus.setText("Not calculated")
         index = self.treeView.currentIndex()
         file_path = self.model.filePath(index)
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -190,7 +236,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.algs = pipeline.Pipeline(self.image_paths)
             print(self.image_paths)
 
-
     def choose_image(self):
         if self.listWidget.currentItem() is not None:
             self.image_path = self.relpath + '/' + self.listWidget.currentItem().text()
@@ -210,17 +255,19 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             else:
                 self.draw_markings()
             self.draw_bounds()
-
-            if self.image_path in self.algs.images_superpixels_uncertainties_node:
+            self.graphMarked.clear()
+            if self.algs.images_superpixels_uncertainties_node[self.image_path]:
                 self.draw_uncertainties()
 
             if self.image_path in self.algs.images_cosegmented:
                 if self.clusteringBox.currentIndex() == 0:
-                    self.draw_results()
+                    self.draw_graph_cut()
                 elif self.clusteringBox.currentIndex() == 1:
-                    self.draw_clusters()
+                    self.draw_kmeans()
             if self.image_path in self.groundtruth:
-                self.draw_gt(self.image_path)
+                self.draw_gt()
+            elif self.compare_image.pixmap() is not None:
+                self.compare_image.clear()
 
 
 
@@ -230,10 +277,10 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def movStart(self, event):
         x = event.pos().x()
         y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
-        if y < 0 or x < 0:
+        if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
-            self.on_click_superpixel(x,y)
+            self.on_click_superpixel(x, y)
             print("hello")
         else:
             self.savePoint(x, y)
@@ -257,7 +304,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             x = event.pos().x()
             y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
 
-            if y < 0 or x < 0:
+            if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
                 return
             if self.point == (-1, -1) or self.point == (x, y):
                 self.point = (x, y)
@@ -360,7 +407,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                                           hog_winSize=(self.winSize.value(), self.winSize.value()),
                                           hog_blockSize=(self.blockSize.value(), self.blockSize.value()),
                                           hog_blockStride=(self.blockStride.value(), self.blockStride.value()),
-                                          hog_cellSize=(self.cellSize.value(), self.cellSize.value()), hog_bins= self.hogBins.value())
+                                          hog_cellSize=(self.cellSize.value(), self.cellSize.value()),
+                                          hog_bins=self.hogBins.value())
         self.disable_buttons()
         self.enable_buttons(3)
         self.extractionStatus.setText("Calculated")
@@ -373,10 +421,10 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         foreground = []
         background = []
         for x in self.foreground[self.image_path]:
-            if self.algs.images_segmented[self.image_path][x[1]][x[0]] not in foreground:
+            if self.algs.images_segmented[self.image_path][x[1] - 1][x[0] - 1] not in foreground:
                 foreground.append(self.algs.images_segmented[self.image_path][x[1]][x[0]])
         for y in self.background[self.image_path]:
-            if self.algs.images_segmented[self.image_path][y[1]][y[0]] not in background:
+            if self.algs.images_segmented[self.image_path][y[1] - 1][y[0] - 1] not in background:
                 background.append(self.algs.images_segmented[self.image_path][y[1]][y[0]])
         self.algs.set_fg_segments(self.image_path, foreground)
         self.algs.set_bg_segments(self.image_path, background)
@@ -385,73 +433,102 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.foreground[self.image_path].clear()
         self.background[self.image_path].clear()
         self.draw_markings()
+        self.draw_bounds()
         self.image.update()
         self.superImage.update()
         self.result_image.update()
 
-    def compute_cosegmentation(self):
+    def compute_graph_cut(self):
         self.algs.perform_graph_cut()
-        self.graph_cut()
-        self.bwRadioButton.setEnabled(True)
-        self.bRadioButton.setEnabled(True)
+        self.result = "graphcut"
+        self.draw_graph_cut()
+        self.disable_buttons()
+        self.enable_buttons(5)
+        if self.gt_originalRadioButton.isEnabled():
+            self.gt_overlapRadioButton.setEnabled(True)
         self.clusteringStatus.setText("Calculated")
         self.clusteringStatus.setStyleSheet("color: lime")
 
     def kmeans(self):
         self.set_markings()
         self.algs.perform_k_means_clustering(num_clusters=self.kclustervalue.value())
-        self.draw_clusters()
+        self.result = "kmeans"
+        self.draw_kmeans()
+        self.enable_buttons(3)
+        if self.gt_originalRadioButton.isEnabled():
+            self.gt_overlapRadioButton.setEnabled(True)
 
-    def graph_cut(self):
-        self.draw_results()
+    def draw_kmeans(self):
+        if self.result == "kmeans":
+            pixmap = QtGui.QPixmap(self.image_path)
 
-    def draw_clusters(self):
-        pixmap = QtGui.QPixmap(self.image_path)
-
-        self.result_image.setPixmap(pixmap)
-        results = self.algs.images_cosegmented[self.image_path]
-        qp = QtGui.QPainter(self.result_image.pixmap())
-        i = 0
-        j = 0
-        lengthy = len(results)
-        lengthx = len(results[0])
+            self.result_image.setPixmap(pixmap)
+            results = self.algs.images_cosegmented[self.image_path]
+            qp = QtGui.QPainter(self.result_image.pixmap())
+            i = 0
+            j = 0
+            lengthy = len(results)
+            lengthx = len(results[0])
+            if self.colorRadioButton.isChecked():
+                color = colors
+            else:
+                color = [(self.k1.isChecked() * 255, self.k1.isChecked() * 255, self.k1.isChecked() * 255),
+                         (self.k2.isChecked() * 255, self.k2.isChecked() * 255, self.k2.isChecked() * 255),
+                         (self.k3.isChecked() * 255, self.k3.isChecked() * 255, self.k3.isChecked() * 255),
+                         (self.k4.isChecked() * 255, self.k4.isChecked() * 255, self.k4.isChecked() * 255),
+                         (self.k5.isChecked() * 255, self.k5.isChecked() * 255, self.k5.isChecked() * 255),
+                         (self.k6.isChecked() * 255, self.k6.isChecked() * 255, self.k6.isChecked() * 255),
+                         (self.k7.isChecked() * 255, self.k7.isChecked() * 255, self.k7.isChecked() * 255),
+                         (self.k8.isChecked() * 255, self.k8.isChecked() * 255, self.k8.isChecked() * 255),
+                         (self.k9.isChecked() * 255, self.k9.isChecked() * 255, self.k9.isChecked() * 255),
+                         (self.k10.isChecked() * 255, self.k10.isChecked() * 255, self.k10.isChecked() * 255),
+                         (self.k11.isChecked() * 255, self.k11.isChecked() * 255, self.k11.isChecked() * 255),
+                         (self.k12.isChecked() * 255, self.k12.isChecked() * 255, self.k12.isChecked() * 255),
+                         (self.k13.isChecked() * 255, self.k13.isChecked() * 255, self.k13.isChecked() * 255),
+                         (self.k14.isChecked() * 255, self.k14.isChecked() * 255, self.k14.isChecked() * 255),
+                         (self.k15.isChecked() * 255, self.k15.isChecked() * 255, self.k15.isChecked() * 255),
+                         (self.k16.isChecked() * 255, self.k16.isChecked() * 255, self.k16.isChecked() * 255) ]
         print(lengthy, lengthx)
         while i < lengthy:
             while j < lengthx:
-                qp.setPen(QtGui.QColor(colors[results[i][j]][0], colors[results[i][j]][1], colors[results[i][j]][2]))
+                qp.setPen(QtGui.QColor(color[results[i][j]][0], color[results[i][j]][1], color[results[i][j]][2]))
                 qp.drawPoint(j, i)
                 j = j + 1
             j = 0
             i = i + 1
         self.result_image.update()
-        self.result = "kmeans"
 
-    def draw_results(self):
-        pixmap = QtGui.QPixmap(self.image_path)
-        if self.bwRadioButton.isChecked():
-            pixmap.fill(QtCore.Qt.black)
-        self.result_image.setPixmap(pixmap)
-        results = self.algs.images_cosegmented[self.image_path]
-        qp = QtGui.QPainter(self.result_image.pixmap())
-        if self.bwRadioButton.isChecked():
-            qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
-        elif self.bRadioButton.isChecked():
-            qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 3))
-            results = find_boundaries(results)
-        y = 0
-        x = 0
-        lengthy = len(results)
-        lengthx = len(results[0])
-        print(lengthy, lengthx)
-        while y < lengthy:
-            while x < lengthx:
-                if results[y][x] == 1:
-                    qp.drawPoint(x, y)
-                x = x + 1
+    def update_kmeans(self):
+        if self.bwkRadioButton.isChecked():
+            self.draw_kmeans()
+
+    def draw_graph_cut(self):
+        if self.result == "graphcut":
+            pixmap = QtGui.QPixmap(self.image_path)
+            if self.bwRadioButton.isChecked():
+                pixmap.fill(QtCore.Qt.black)
+            self.result_image.setPixmap(pixmap)
+            results = self.algs.images_cosegmented[self.image_path]
+            qp = QtGui.QPainter(self.result_image.pixmap())
+            if self.bwRadioButton.isChecked():
+                qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
+            elif self.bRadioButton.isChecked():
+                qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 2))
+                results = find_boundaries(results)
+            y = 0
             x = 0
-            y = y + 1
-        self.result_image.update()
-        self.result = "graphcut"
+            lengthy = len(results)
+            lengthx = len(results[0])
+            print(lengthy, lengthx)
+            while y < lengthy:
+                while x < lengthx:
+                    if results[y][x] == 1:
+                        qp.drawPoint(x, y)
+                    x = x + 1
+                x = 0
+                y = y + 1
+            self.result_image.update()
+
 
     def draw_bounds(self):
         pixmap = QtGui.QPixmap(self.image_path)
@@ -465,7 +542,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         qp.setPen(QtGui.QPen(QtCore.Qt.blue, 1))
         for x in self.background[self.image_path]:
             qp.drawPoint(x[0], x[1])
-        qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 3))
+        qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 2))
         boundaries = self.algs.get_superpixel_borders_mask(self.image_path)
         i = 0
         j = 0
@@ -481,6 +558,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             i = i + 1
         self.superImage.update()
 
+
     def clustering_options(self):
         if self.clusteringBox.currentIndex() == 0:
             self.kmeansFrame.setHidden(True)
@@ -488,6 +566,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         elif self.clusteringBox.currentIndex() == 1:
             self.kmeansFrame.setVisible(True)
             self.graphFrame.setHidden(True)
+
 
     def create_graph(self):
         pg.setConfigOption('background', 'w')
@@ -500,17 +579,36 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.view.setAspectLocked(True)
         self.view.show()
 
-        scatter = pg.ScatterPlotItem(pen=pg.mkPen(width=1, color='r'), symbol='o', size=5)
+        scatter = pg.ScatterPlotItem(pen=pg.mkPen(width=1, color='r'), symbol='o', size=7)
+        pos = [{'pos': x} for x in self.mdsData]
+        scatter.setData(pos)
         scatter.sigClicked.connect(self.on_click_graph)
         self.view.addItem(scatter)
 
-        pos = [{'pos': x} for x in self.mdsData]
-        scatter.setData(pos)
 
     def on_click_graph(self, _, points):
-        self.graphMarked.clear()
+        self.clear_graph_marked()
         for point in points:
             self.graphMarked.append(np.where([point.pos()[0], point.pos()[1]] == self.mdsData)[0][0])
+            point.setBrush(pg.mkBrush(0, 255, 0, 255))
+        self.draw_graph_marked()
+
+
+    def on_click_superpixel(self, x, y):
+        self.clear_graph_marked()
+        superpixel = self.algs.images_segmented[self.image_path][y][x]
+        self.view.getPlotItem().dataItems[0].points()[superpixel].setBrush(pg.mkBrush(0, 255, 0, 255))
+        self.graphMarked.append(superpixel)
+        self.draw_graph_marked()
+
+
+    def clear_graph_marked(self):
+        for superpixel in self.graphMarked:
+            self.view.getPlotItem().dataItems[0].points()[superpixel].setBrush(pg.mkBrush(100, 100, 150, 255))
+        self.graphMarked.clear()
+
+
+    def draw_graph_marked(self):
         self.draw_bounds()
         print(self.graphMarked)
         print(self.mdsData)
@@ -529,17 +627,19 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             j = 0
             i = i + 1
         self.superImage.update()
-    def on_click_superpixel(self, x, y):
-        superpixel = self.algs.images_segmented[self.image_path][y][x]
-        self.mdsData[superpixel]
-        self.graphMarked.clear()
-
 
 
     def set_gmm(self):
         self.set_markings()
-        if len(self.algs.images_superpixels_foreground[self.image_path]) >= self.componentMax.value() and len(
-                self.algs.images_superpixels_background[self.image_path]) >= self.componentMax.value():
+        totalForeground  = 0
+        totalBackground = 0
+        for i in self.algs.images_superpixels_foreground.values():
+            print(i)
+            print(len(i))
+            totalForeground = totalForeground + len(i)
+        for j in self.algs.images_superpixels_background.values():
+            totalBackground = totalBackground + len(j)
+        if totalForeground >= self.componentMax.value() and totalBackground >= self.componentMax.value():
             self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()),
                                   n_init=self.n_init.value())
             self.algs.compute_edge_uncertainties()
@@ -547,17 +647,21 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.draw_uncertainties()
             self.disable_buttons()
             self.enable_buttons(4)
+
         else:
-            errormessage("Not enough superpixels marked","Both foreground and background need more superpixels marked than the maximum components")
+            errormessage("Not enough superpixels marked",
+                         "Both foreground and background need more superpixels marked than the maximum components")
+
 
     def draw_uncertainties(self):
         pixmap = QtGui.QPixmap(self.image_path)
+        self.uncertainty_image.setPixmap(pixmap)
         if self.edgeRadioButton.isChecked():
             x = self.algs.images_superpixels_uncertainties_edge[self.image_path]
         elif self.nodeRadioButton.isChecked():
             x = self.algs.images_superpixels_uncertainties_node[self.image_path]
-        elif self.nodeRadioButton.isChecked():
-            x = self.algs.images_superpixels_uncertainties_graph_cut[self.image_path]
+        elif self.graphRadioButton.isChecked():
+            x = [1 - i for i in self.algs.images_superpixels_uncertainties_graph_cut[self.image_path]]
         self.uncertainty_image.setPixmap(pixmap)
         qp = QtGui.QPainter(self.uncertainty_image.pixmap())
         i = 0
@@ -571,17 +675,18 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                 if color <= 255:
                     qp.setPen(QtGui.QPen(QtGui.QColor(0, color, 255)))
                 elif color <= 510:
-                    qp.setPen(QtGui.QPen(QtGui.QColor(0, 255, 510-color)))
+                    qp.setPen(QtGui.QPen(QtGui.QColor(0, 255, 510 - color)))
                 elif color <= 765:
-                    qp.setPen(QtGui.QPen(QtGui.QColor(color-510, 255, 0)))
+                    qp.setPen(QtGui.QPen(QtGui.QColor(color - 510, 255, 0)))
                 else:
-                    qp.setPen(QtGui.QPen(QtGui.QColor(255, 1020-color, 0)))
+                    qp.setPen(QtGui.QPen(QtGui.QColor(255, 1020 - color, 0)))
 
                 qp.drawPoint(j, i)
                 j = j + 1
             j = 0
             i = i + 1
         self.uncertainty_image.update()
+
 
     def disable_buttons(self):
         self.superpixelButton.setDisabled(True)
@@ -598,6 +703,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.nodeRadioButton.setDisabled(True)
         self.bwRadioButton.setDisabled(True)
         self.bRadioButton.setDisabled(True)
+        self.graphRadioButton.setDisabled(True)
+
 
     def enable_buttons(self, option):
         if option > 0:
@@ -612,8 +719,8 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.graph_button.setEnabled(True)
             self.GMMButton.setEnabled(True)
             self.kmeansButton.setEnabled(True)
-
-
+            self.bwkRadioButton.setEnabled(True)
+            self.colorRadioButton.setEnabled(True)
         if option > 3:
             self.graphcutButton.setEnabled(True)
             self.edgeRadioButton.setEnabled(True)
@@ -622,6 +729,7 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.graphRadioButton.setEnabled(True)
             self.bwRadioButton.setEnabled(True)
             self.bRadioButton.setEnabled(True)
+
 
     def change_clustering(self):
         self.graphCutModeLabel.setHidden(True)
@@ -637,7 +745,6 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         if current_index == "kmeans clustering":
             self.clusterModeLabel.setVisible(True)
             self.clusterModeFrame.setVisible(True)
-
 
 
     def change_features(self):
@@ -698,9 +805,15 @@ class MyFileBrowser(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.binsHogLabel.setVisible(True)
             self.hogBins.setVisible(True)
 
+    def write_xml_settings(self):
+        root = ET.Element("root")
+        settings = ET.SubElement("settings")
+        ET.SubElement(settings, "super_pixel_quantity")
+
+
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication([])
-    fb = MyFileBrowser()
+    fb = mainUI()
     fb.show()
     app.exec_()

@@ -74,6 +74,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QSpinBox" name="componentMin">
+            <property name="minimum">
+             <number>1</number>
+            </property>
             <property name="value">
              <number>5</number>
             </property>
@@ -1457,7 +1460,7 @@
        <item row="8" column="0">
         <widget class="QLabel" name="clusterModeLabel">
          <property name="text">
-          <string>Cluster mode</string>
+          <string>kmeans mode</string>
          </property>
         </widget>
        </item>

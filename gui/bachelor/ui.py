@@ -278,7 +278,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def move_start(self, event):
         x = event.pos().x()
-        y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) )
+        y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
         if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
@@ -302,9 +302,8 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def move_connect(self, event):
         if self.drawRadioButton.isChecked():
-            self.image.update()
             x = event.pos().x()
-            y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
+            y = event.pos().y() - round((self.image.height() - self.image.pixmap().height())/ 2)
 
             if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
                 return
@@ -423,10 +422,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         foreground = []
         background = []
         for x in self.foreground[self.image_path]:
-            if self.algs.images_segmented[self.image_path][x[1] - 1][x[0] - 1] not in foreground:
+            if self.algs.images_segmented[self.image_path][x[1]][x[0]] not in foreground:
                 foreground.append(self.algs.images_segmented[self.image_path][x[1]][x[0]])
         for y in self.background[self.image_path]:
-            if self.algs.images_segmented[self.image_path][y[1] - 1][y[0] - 1] not in background:
+            if self.algs.images_segmented[self.image_path][y[1]][y[0]] not in background:
                 background.append(self.algs.images_segmented[self.image_path][y[1]][y[0]])
         self.algs.set_fg_segments(self.image_path, foreground)
         self.algs.set_bg_segments(self.image_path, background)

@@ -77,6 +77,9 @@
             <property name="minimum">
              <number>1</number>
             </property>
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
             <property name="value">
              <number>5</number>
             </property>
@@ -91,6 +94,9 @@
           </item>
           <item row="1" column="1">
            <widget class="QSpinBox" name="componentMax">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
             <property name="value">
              <number>9</number>
             </property>
@@ -120,6 +126,9 @@
             </property>
             <property name="maximum">
              <double>999999999.000000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -170,7 +179,7 @@
           <string extracomment="hello"/>
          </property>
          <property name="text">
-          <string>Clustering</string>
+          <string>Co-segmentation</string>
          </property>
         </widget>
        </item>
@@ -324,6 +333,9 @@
             <property name="decimals">
              <number>5</number>
             </property>
+            <property name="maximum">
+             <double>1000000000.000000000000000</double>
+            </property>
             <property name="value">
              <double>10.000000000000000</double>
             </property>
@@ -365,17 +377,17 @@
              <number>1</number>
             </property>
             <property name="maximum">
-             <number>9999</number>
+             <number>999999999</number>
             </property>
             <property name="value">
-             <number>100</number>
+             <number>500</number>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
            <widget class="QSpinBox" name="iterationsSpinBox">
             <property name="maximum">
-             <number>999</number>
+             <number>999999999</number>
             </property>
             <property name="value">
              <number>10</number>
@@ -387,8 +399,11 @@
             <property name="decimals">
              <number>5</number>
             </property>
+            <property name="maximum">
+             <double>1000000000.000000000000000</double>
+            </property>
             <property name="value">
-             <double>5.000000000000000</double>
+             <double>0.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -700,7 +715,7 @@
              <number>1</number>
             </property>
             <property name="maximum">
-             <number>999999</number>
+             <number>999999999</number>
             </property>
             <property name="value">
              <number>16</number>
@@ -795,6 +810,9 @@
            <widget class="QSpinBox" name="siftKeyPoint">
             <property name="minimum">
              <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>999999999</number>
             </property>
             <property name="value">
              <number>32</number>
@@ -1346,21 +1364,21 @@
          </property>
          <layout class="QGridLayout" name="gridLayout_21">
           <item row="4" column="0">
-           <widget class="QLabel" name="label_26">
+           <widget class="QLabel" name="cosegmentationProgress">
             <property name="text">
-             <string>clustering:</string>
+             <string>Co-segmentation:</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_23">
             <property name="text">
-             <string>Extractions:</string>
+             <string>Features:</string>
             </property>
            </widget>
           </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="label_22">
+           <widget class="QLabel" name="superpixelProgress">
             <property name="text">
              <string>Superpixels:</string>
             </property>

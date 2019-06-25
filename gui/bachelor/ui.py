@@ -10,7 +10,6 @@ import pyqtgraph as pg
 from skimage.segmentation import find_boundaries
 
 # add heat map, eraser, ground truth comparison
-from tooltips import set_tooltips
 from error import errormessage
 from compare_pixel import compare_pixel
 import xml.etree.ElementTree as ET
@@ -99,8 +98,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.change_clustering()
         self.change_features()
         self.populate()
-        set_tooltips(self.superpixelCalculationLabel, self.superpixelQuantityLabel, self.iterationsLabel,
-                     self.sigmaLabel, self.featureExtractionLabel, self.RGB, self.HSV)
+        self.set_tooltips()
 
     def populate(self):
         path = os.getcwd() + '/' + self.currentFolder
@@ -209,6 +207,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.clusteringStatus.setText("Not calculated")
         self.extractionStatus.setText("Not calculated")
         self.superpixelStatus.setText("Not calculated")
+        self.clusteringStatus.setStyleSheet("color: red")
+        self.extractionStatus.setStyleSheet("color: red")
+        self.superpixelStatus.setStyleSheet("color: red")
+
         index = self.treeView.currentIndex()
         file_path = self.model.filePath(index)
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -242,12 +244,12 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             print(self.image_path)
             pixmap = QtGui.QPixmap(self.image_path)
             self.image.setPixmap(pixmap)
-            self.image.mousePressEvent = self.movStart
-            self.image.mouseMoveEvent = self.mov
-            self.image.mouseReleaseEvent = self.releasemov
-            self.superImage.mousePressEvent = self.movStart
-            self.superImage.mouseMoveEvent = self.mov
-            self.superImage.mouseReleaseEvent = self.releasemov
+            self.image.mousePressEvent = self.move_start
+            self.image.mouseMoveEvent = self.move_connect
+            self.image.mouseReleaseEvent = self.release_move
+            self.superImage.mousePressEvent = self.move_start
+            self.superImage.mouseMoveEvent = self.move_connect
+            self.superImage.mouseReleaseEvent = self.release_move
             self.enable_buttons(1)
             if self.image_path not in self.foreground:
                 self.foreground[self.image_path] = []
@@ -274,7 +276,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         else:
             self.disable_buttons()
 
-    def movStart(self, event):
+    def move_start(self, event):
         x = event.pos().x()
         y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
         if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
@@ -283,11 +285,11 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.on_click_superpixel(x, y)
             print("hello")
         else:
-            self.savePoint(x, y)
+            self.save_point(x, y)
             self.point = (x, y)
             self.draw_markings()
 
-    def savePoint(self, x, y):
+    def save_point(self, x, y):
         if (x, y) in self.foreground[self.image_path]:
             self.foreground[self.image_path].remove((x, y))
         elif (x, y) in self.background:
@@ -298,7 +300,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         elif self.pencil == 2:
             self.foreground[self.image_path].append((x, y))
 
-    def mov(self, event):
+    def move_connect(self, event):
         if self.drawRadioButton.isChecked():
             self.image.update()
             x = event.pos().x()
@@ -308,7 +310,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                 return
             if self.point == (-1, -1) or self.point == (x, y):
                 self.point = (x, y)
-                self.savePoint(x, y)
+                self.save_point(x, y)
                 self.draw_markings()
                 return
             if abs(self.point[0] - x) < abs(self.point[1] - y):
@@ -324,21 +326,21 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.point = (x, y)
             self.draw_markings()
 
-    def releasemov(self, event):
+    def release_move(self, event):
         self.point = (-1, -1)
 
     def save_linex(self, x1, x2, y1, y2):
         slope = (y1 - y2) / (x1 - x2)
         i = x1 + 1
         while i <= x2:
-            self.savePoint(i, round(y1 + slope * (i - x1)))
+            self.save_point(i, round(y1 + slope * (i - x1)))
             i = i + 1
 
     def save_liney(self, x1, x2, y1, y2):
         slope = (x1 - x2) / (y1 - y2)
         i = y1 + 1
         while i <= y2:
-            self.savePoint(round(x1 + slope * (i - y1)), i)
+            self.save_point(round(x1 + slope * (i - y1)), i)
             i = i + 1
 
     def draw_markings(self):
@@ -660,6 +662,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             x = self.algs.images_superpixels_uncertainties_edge[self.image_path]
         elif self.nodeRadioButton.isChecked():
             x = self.algs.images_superpixels_uncertainties_node[self.image_path]
+            print(x)
         elif self.graphRadioButton.isChecked():
             x = [1 - i for i in self.algs.images_superpixels_uncertainties_graph_cut[self.image_path]]
         self.uncertainty_image.setPixmap(pixmap)
@@ -732,19 +735,22 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
 
     def change_clustering(self):
-        self.graphCutModeLabel.setHidden(True)
-        self.graphCutModeFrame.setHidden(True)
-        self.clusterModeLabel.setHidden(True)
-        self.clusterModeFrame.setHidden(True)
+
+
 
         current_index = self.clusteringBox.currentText()
 
         if current_index == "Graph cut":
             self.graphCutModeLabel.setVisible(True)
             self.graphCutModeFrame.setVisible(True)
+            self.clusterModeLabel.setHidden(True)
+            self.clusterModeFrame.setHidden(True)
+
         if current_index == "kmeans clustering":
             self.clusterModeLabel.setVisible(True)
             self.clusterModeFrame.setVisible(True)
+            self.graphCutModeLabel.setHidden(True)
+            self.graphCutModeFrame.setHidden(True)
 
 
     def change_features(self):
@@ -809,6 +815,23 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         root = ET.Element("root")
         settings = ET.SubElement("settings")
         ET.SubElement(settings, "super_pixel_quantity")
+
+    def set_tooltips(self):
+        self.superpixelCalculationLabel.setToolTip("Calculate the superpixels for all images in the folder using SLIC")
+        self.superpixelQuantityLabel.setToolTip("Set the approximate amount of superpixels each image will have")
+        self.iterationsLabel.setToolTip("Maximum number of iterations of k-means")
+        self.compactnessLabel.setToolTip("Balances color proximity and space proximity. Higher results in more square superpixels")
+        self.sigmaLabel.setToolTip("Width of Gaussian smoothing kernel for optional pre-processing. 0 for no smoothing")
+
+
+
+        self.featureExtractionLabel.setToolTip(
+            "Compute feature vectors for each superpixel consisting of the selected features")
+        self.RGB.setToolTip("Means of RGB")
+        self.HSV.setToolTip("Means of HSV")
+        self.superpixelProgress.setToolTip("Right click on a folder and select on an image" 
+                                           "Procceed by pressing calculate superpixels")
+
 
 
 

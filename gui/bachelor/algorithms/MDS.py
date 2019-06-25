@@ -1,6 +1,5 @@
 from sklearn.datasets import load_digits
 from sklearn.manifold import MDS
-from matplotlib import pyplot
 
 def mds_transform(data):
     embedding = MDS(n_components=2)

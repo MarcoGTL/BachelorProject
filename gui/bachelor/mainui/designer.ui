@@ -968,7 +968,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>455</width>
+             <width>425</width>
              <height>723</height>
             </rect>
            </property>
@@ -1124,7 +1124,7 @@
      <widget class="QFrame" name="settingFrame">
       <property name="maximumSize">
        <size>
-        <width>270</width>
+        <width>300</width>
         <height>16777215</height>
        </size>
       </property>

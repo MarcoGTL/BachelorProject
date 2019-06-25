@@ -278,7 +278,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def move_start(self, event):
         x = event.pos().x()
-        y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
+        y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) )
         if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
@@ -829,8 +829,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             "Compute feature vectors for each superpixel consisting of the selected features")
         self.RGB.setToolTip("Means of RGB")
         self.HSV.setToolTip("Means of HSV")
-        self.superpixelProgress.setToolTip("Right click on a folder and select on an image" 
-                                           "Procceed by pressing calculate superpixels")
+        self.superpixelProgress.setToolTip("Right click on a folder and select on an image then press calculate superpixels")
 
 
 

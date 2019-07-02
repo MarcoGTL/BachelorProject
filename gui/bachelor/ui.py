@@ -16,13 +16,37 @@ import xml.etree.ElementTree as ET
 from plot import on_click_superpixel, on_click_graph
 from visibility import change_features, change_clustering, enable_buttons, disable_buttons
 
+"""
+Author: Marco
 
+A class instantiating the layout from QT Designer and adding functionality to everything.
+
+Required Packages:
+    pyqtgraph
+    PyQt5
+    
+    Attributes:
+        mdsData = List                                 # Downscaled version of feature vector
+        point = (int, int)                             # Last point drawn
+        image_paths = List                             # Image paths of selected folder
+        algs: Pipeline                                 # Pipeline of algorithms used for cosegmentation
+        pencil = 2                                     # Current drawing pencil"
+        relative_image_path = ""                       # Path of folder relative to program"
+        foreground: dict                               # Foreground  points"
+        background: dict                               # Background points"
+        groundtruth: dict                              # Ground truth images with normal image path as key"
+        image_path: String                             # Path of selected image
+        plotMarked: List                               # Current set of points selected in mds Plot
+        model: QFileSystemModel                        # File system for selecting images 
+"""
 
 
 class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def __init__(self):
         super(mainUI, self).__init__()
-        self.setupUi(self)
+        self.setupUi(self)  # QT Designer template instantiated
+
+        # connects everything to it's appropriate function and adds tooltips
         initialize(self.treeView, self.context_menu, self.listWidget, self.choose_image, self.clearMarkingsButton,
                    self.clear_markings, self.histogramButton, self.set_histograms, self.superpixelButton,
                    self.calculate_superpixels, self.graphcutButton, self.compute_graph_cut, self.kmeansButton,
@@ -44,25 +68,27 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                    self.graphCutModeLabel, self.clusterModeLabel, self.gtLabel, self.superpixelProgress,
                    self.featureProgress, self.cosegmentationProgress)
 
-        self.mdsData = []
-        self.point = (-1, -1)
-        self.image_paths = []
-        self.algs = pipeline.Pipeline([])
-        self.pencil = 2
-        self.relative_image_path = ""
-        self.foreground = dict()
-        self.background = dict()
-        self.groundtruth = dict()
-        self.img_float = []
-        self.image_path = ""
-        self.graphMarked = []
-        self.model = QtWidgets.QFileSystemModel()
+        # initialize global variables which some functions need"
+        self.mdsData = []                                   # Downscaled version of feature vector"
+        self.point = (-1, -1)                               # Last point drawn"
+        self.image_paths = []                               # Image paths of selected folder"
+        self.algs = pipeline.Pipeline([])                   # Pipeline of algorithms"
+        self.pencil = 2                                     # Current drawing pencil"
+        self.relative_image_path = ""                       # Path of folder relative to program"
+        self.foreground = dict()                            # Foreground  points"
+        self.background = dict()                            # Background points"
+        self.groundtruth = dict()                           # Ground truth images with normal image path as key"
+        self.image_path = ""                                # Path of selected image
+        self.plotMarked = []                                # Current set of points selected in mds Plot
+        self.model = QtWidgets.QFileSystemModel()           #
         self.result = "None"
         self.relpath = ""
         self.change_clustering()
         self.change_features()
         populate("images", self.model, self.treeView)
 
+"""
+"""
     def context_menu(self):
         context_menu(self.model, self.treeView, self.select_folder, self.listWidget, self.select_gt)
 
@@ -136,7 +162,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             else:
                 draw_markings(self.image_path, self.image, self.background, self.foreground, self.algs, self.superImage)
             draw_bounds(self.image_path, self.superImage, self.algs, self.foreground, self.background)
-            self.graphMarked.clear()
+            self.plotMarked.clear()
             if self.algs.images_superpixels_uncertainties_node[self.image_path]:
                 self.draw_uncertainties()
 
@@ -147,7 +173,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                 elif self.result == "kmeans":
                     self.draw_kmeans()
             if self.image_path in self.groundtruth:
-               self.draw_gt()
+                self.draw_gt()
             elif self.compare_image.pixmap() is not None:
                 self.compare_image.clear()
 
@@ -162,7 +188,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
-            on_click_superpixel(self.graphMarked, self.view, self.algs, self.image_path, self.superImage,
+            on_click_superpixel(self.plotMarked, self.view, self.algs, self.image_path, self.superImage,
                                 self.foreground, self.background, x, y)
         else:
             self.save_point(x, y)
@@ -343,7 +369,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.view.addItem(scatter)
 
     def on_click_graph(self, _, points):
-        on_click_graph(self.graphMarked, self.view, self.mdsData, self.image_path, self.superImage, self.algs,
+        on_click_graph(self.plotMarked, self.view, self.mdsData, self.image_path, self.superImage, self.algs,
                        self.foreground, self.background, _, points)
 
     def set_gmm(self):
@@ -403,10 +429,11 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def draw_uncertainties(self):
         draw_uncertainties(self.image_path, self.uncertainty_image, self.edgeRadioButton.isChecked(), self.algs,
                            self.nodeRadioButton.isChecked(), self.graphRadioButton.isChecked())
+
     def draw_kmeans(self):
         draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.colorRadioButton, self.k1, self.k2,
-        self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
-        self.k13, self.k14, self.k15, self.k16)
+                    self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
+                    self.k13, self.k14, self.k15, self.k16)
 
 
 if __name__ == '__main__':

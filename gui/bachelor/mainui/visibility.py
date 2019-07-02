@@ -1,3 +1,8 @@
+"""
+Shows relevant paramters for the currently selected feature to be edited
+"""
+
+
 def change_features(colorLabel1, colorLabel2, colorLabel3, colorLabel4, HHist, SHist, HSHHist, HSSHist, siftlabel,
                     siftKeyPoint, entropyLabel_1, entropyLabel_2, HentropyCheckBox, SentropyCheckBox, windowHogLabel,
                     winSize, blockHogLabel, blockSize, blockStrideHogLabel, blockStride, cellHogLabel, cellSize,
@@ -58,6 +63,11 @@ def change_features(colorLabel1, colorLabel2, colorLabel3, colorLabel4, HHist, S
         hogBins.setVisible(True)
 
 
+"""
+hides/enables modes for the co-segmentation
+"""
+
+
 def change_cosegmentation(graphCutModeLabel, graphCutModeFrame, clusterModeLabel, clusterModeFrame, current_index):
     if current_index == "Graph cut":
         graphCutModeLabel.setVisible(True)
@@ -70,6 +80,11 @@ def change_cosegmentation(graphCutModeLabel, graphCutModeFrame, clusterModeLabel
         clusterModeFrame.setVisible(True)
         graphCutModeLabel.setHidden(True)
         graphCutModeFrame.setHidden(True)
+
+
+"""
+Enables buttons that can be used at the current stage of cosegmentation
+"""
 
 
 def enable_buttons(superpixelButton, clearMarkingsButton, histogramButton, drawRadioButton, histogramRadioButton,
@@ -97,6 +112,11 @@ def enable_buttons(superpixelButton, clearMarkingsButton, histogramButton, drawR
         graphRadioButton.setEnabled(True)
         bwRadioButton.setEnabled(True)
         bRadioButton.setEnabled(True)
+
+
+"""
+Disables all buttons. To be used in combination with enable_buttons
+"""
 
 
 def disable_buttons(superpixelButton, histogramButton, histogramRadioButton, drawRadioButton, graph_button, GMMButton,

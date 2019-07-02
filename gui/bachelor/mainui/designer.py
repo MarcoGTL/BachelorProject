@@ -25,6 +25,8 @@ Required Packages:
         imageListFrame                                 # Contains a list view for the set of images selected
         settingFrame                                   # Contains all settings for changing display        
 """
+
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -832,5 +834,3 @@ class Ui_MainWindow(object):
         self.gtpercentage.setText(_translate("MainWindow", "N/A %"))
         self.overlapLabel.setText(_translate("MainWindow", "overlap:"))
         self.gtLabel.setText(_translate("MainWindow", "Ground Truth "))
-
-

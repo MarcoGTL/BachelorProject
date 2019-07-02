@@ -8,6 +8,8 @@ from error import errormessage
 Draws uncertainties. Checks which option is selected and retrieves it. Then iterates over all pixels and checks
 what color it should be by multiplying the normalized uncertainty vector
 """
+
+
 def draw_uncertainties(image_path, uncertainty_image, edge, algs, node, graph):
     pixmap = QtGui.QPixmap(image_path)
     uncertainty_image.setPixmap(pixmap)
@@ -44,9 +46,12 @@ def draw_uncertainties(image_path, uncertainty_image, edge, algs, node, graph):
 
     uncertainty_image.update()
 
+
 """
 Gets the boundaries and iterates over pixels from image and ddraws them
 """
+
+
 def draw_bounds(image_path, superImage, algs, foreground, background):
     pixmap = QtGui.QPixmap(image_path)
     superImage.setPixmap(pixmap)
@@ -84,6 +89,8 @@ For kmeans overlap we check whether the user has checked foreground or backgroun
 it with the ground truth
 For graph cut uses a comparefunction
 """
+
+
 def draw_gt(file_path, image, groundtruth, image_path, gt_originalRadioButton, compare_image, algs, result, k1, k2, k3,
             k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, gtpercentage):
     pixmap = QtGui.QPixmap(file_path)
@@ -147,6 +154,8 @@ def draw_gt(file_path, image, groundtruth, image_path, gt_originalRadioButton, c
 """
 Colors the corresponding superpixel of the point clicked on MDS plot
 """
+
+
 def draw_plot_marked(image_path, superImage, algs, foreground, background, graphMarked):
     draw_bounds(image_path, superImage, algs, foreground, background)
     qp = QtGui.QPainter(superImage.pixmap())
@@ -165,10 +174,13 @@ def draw_plot_marked(image_path, superImage, algs, foreground, background, graph
         i = i + 1
     superImage.update()
 
+
 """
 Draws kmeans. If color is selected creates a color table else creates a white black table depending on if the user
 selected the cluster as foreground. Then iterates over all pixels
 """
+
+
 def draw_kmeans(result, image_path, result_image, algs, colorselected, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11,
                 k12, k13, k14, k15, k16):
     if result == "kmeans":
@@ -183,8 +195,9 @@ def draw_kmeans(result, image_path, result_image, algs, colorselected, k1, k2, k
         lengthx = len(results[0])
         if colorselected:
             color = [[0, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255],
-          [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0], [128, 0, 128],
-          [0, 128, 128], [0, 0, 128]]
+                     [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0],
+                     [128, 0, 128],
+                     [0, 128, 128], [0, 0, 128]]
         else:
             color = [(k1.isChecked() * 255, k1.isChecked() * 255, k1.isChecked() * 255),
                      (k2.isChecked() * 255, k2.isChecked() * 255, k2.isChecked() * 255),
@@ -211,9 +224,12 @@ def draw_kmeans(result, image_path, result_image, algs, colorselected, k1, k2, k
             i = i + 1
         result_image.update()
 
+
 """
 Draws all foreground marked pixels red and all background marked pixels blue in both superpixel and draw tab
 """
+
+
 def draw_markings(image_path, image, background, foreground, algs, superImage):
     pixmap = QtGui.QPixmap(image_path)
     image.setPixmap(pixmap)
@@ -238,10 +254,13 @@ def draw_markings(image_path, image, background, foreground, algs, superImage):
     image.update()
     superImage.update()
 
+
 """
 Draws the graph cut where white is foreground and black is background
 If border mode is selected it divides the foreground and background with a border
 """
+
+
 def draw_graph_cut(result, image_path, bw, result_image, algs, b):
     if result == "graphcut":
         pixmap = QtGui.QPixmap(image_path)

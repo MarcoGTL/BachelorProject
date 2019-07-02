@@ -71,28 +71,28 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                    self.featureProgress, self.cosegmentationProgress)
 
         # initialize global variables which some functions need"
-        self.mdsData = []                                   # Downscaled version of feature vector"
-        self.point = (-1, -1)                               # Last point drawn"
-        self.image_paths = []                               # Image paths of selected folder"
-        self.algs = pipeline.Pipeline([])                   # Pipeline of algorithms"
-        self.pencil = 2                                     # Current drawing pencil"
-        self.relative_image_path = ""                       # Path of folder relative to program"
-        self.foreground = dict()                            # Foreground  points"
-        self.background = dict()                            # Background points"
-        self.groundtruth = dict()                           # Ground truth images with normal image path as key"
-        self.image_path = ""                                # Path of selected image
-        self.plotMarked = []                                # Current set of points selected in mds Plot
-        self.model = QtWidgets.QFileSystemModel()           #
+        self.mdsData = []  # Downscaled version of feature vector"
+        self.point = (-1, -1)  # Last point drawn"
+        self.image_paths = []  # Image paths of selected folder"
+        self.algs = pipeline.Pipeline([])  # Pipeline of algorithms"
+        self.pencil = 2  # Current drawing pencil"
+        self.relative_image_path = ""  # Path of folder relative to program"
+        self.foreground = dict()  # Foreground  points"
+        self.background = dict()  # Background points"
+        self.groundtruth = dict()  # Ground truth images with normal image path as key"
+        self.image_path = ""  # Path of selected image
+        self.plotMarked = []  # Current set of points selected in mds Plot
+        self.model = QtWidgets.QFileSystemModel()  #
         self.result = "None"
         self.relpath = ""
         self.change_cosegmentation()
         self.change_features()
         populate("images", self.model, self.treeView)
 
-
     """
     Generates context menu folder when  right clicking a folder in the file system view
     """
+
     def context_menu(self):
         context_menu(self.model, self.treeView, self.select_folder, self.listWidget, self.select_gt)
 
@@ -101,6 +101,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     Checks if there are co-segmentation results to enable overlap between result and ground truth
     draws ground truth in the ground truth tab
     """
+
     def select_gt(self):
         index = self.treeView.currentIndex()
         self.file_path = self.model.filePath(index)
@@ -113,6 +114,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     draws ground truth differently depending on which co-segmentation has been used
     """
+
     def draw_gt(self):
         draw_gt(self.file_path, self.image, self.groundtruth, self.image_path, self.gt_originalRadioButton,
                 self.compare_image, self.algs, self.result, self.k1, self.k2, self.k3, self.k4, self.k5, self.k6,
@@ -123,6 +125,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     Clears all settings from the previous folder if it exists and resets the progress box
     Finds all images in folder and adds them to image_paths
     """
+
     def select_folder(self):
         self.listWidget.clear()
         self.image.clear()
@@ -163,6 +166,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     Selects an image from image_paths, draws images that already have been calculated and draws markings
      that have already been drawn.  Sets marking/selection ability for the superpixel tab and the draw tab
     """
+
     def choose_image(self):
         if self.listWidget.currentItem() is not None:
             self.image_path = self.relpath + '/' + self.listWidget.currentItem().text()
@@ -187,7 +191,8 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
             if self.image_path in self.algs.images_cosegmented:
                 if self.result == "graphcut":
-                    draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image, self.algs,
+                    draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image,
+                                   self.algs,
                                    self.bRadioButton.isChecked())
                 elif self.result == "kmeans":
                     self.draw_kmeans()
@@ -205,6 +210,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     Stores the point on the graph that has been marked in foreground or background. Sets last point marked
     If MDS is selected hightlights the superpixel and corresponding point instead.
     """
+
     def move_start(self, event):
         x = event.pos().x()
         y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
@@ -221,6 +227,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Stores ooint and checks if the point has been marked previously and removes that entry
     """
+
     def save_point(self, x, y):
         if (x, y) in self.foreground[self.image_path]:
             self.foreground[self.image_path].remove((x, y))
@@ -236,6 +243,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     connects last marked point with the current mouse position using midpoint line algorithm. MLA iterates vertically
     instead of horizontally if it is larger in length compared to width. Saves all points between and including.
     """
+
     def move_connect(self, event):
         if self.drawRadioButton.isChecked():
             x = event.pos().x()
@@ -264,6 +272,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Midpoint line algorithm that iterates horizontally
     """
+
     def save_linex(self, x1, x2, y1, y2):
         slope = (y1 - y2) / (x1 - x2)
         i = x1 + 1
@@ -274,6 +283,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Midpoint line algorithm that iterates vertically
     """
+
     def save_liney(self, x1, x2, y1, y2):
         slope = (x1 - x2) / (y1 - y2)
         i = y1 + 1
@@ -284,13 +294,14 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Sets last point back to default when the mouse is released
     """
+
     def release_move(self, event):
         self.point = (-1, -1)
-
 
     """
     Sets if the pen is marking foreground(2) or background(1)
     """
+
     def currentPencil(self):
         if self.fgRadioButton.isChecked():
             self.pencil = 2
@@ -301,6 +312,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     Calculates superpixels as well as neighbors and centers. Then draws the superpixels in the superpixel tab by their
     bounds
     """
+
     def calculate_superpixels(self):
         self.algs.compute_superpixels(self.superpixelSpinBox.value(), self.compactnessSpinBox.value(),
                                       self.iterationsSpinBox.value(), self.sigmaSpinBox.value())
@@ -322,6 +334,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Calculates the feature vector
     """
+
     def set_feature_vector(self):
         self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(),
                                           h_hist=self.Hue.isChecked(), h_hist_bins=self.HHist.value(),
@@ -347,6 +360,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Checks all points marked which superpixel they represent and add to the corresponding foreground/background list
     """
+
     def set_markings(self):
         foreground = []
         background = []
@@ -362,6 +376,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Clears all markings and updates display
     """
+
     def clear_markings(self):
         self.foreground[self.image_path].clear()
         self.background[self.image_path].clear()
@@ -374,6 +389,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Compute the graph cut and draw the results.
     """
+
     def compute_graph_cut(self):
         self.algs.perform_graph_cut()
         self.result = "graphcut"
@@ -389,6 +405,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Compute the kmeans and draw the results.
     """
+
     def kmeans(self):
         self.algs.perform_k_means_clustering(num_clusters=self.kclustervalue.value())
         self.result = "kmeans"
@@ -400,6 +417,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Update the kmeans display when a different mode is selected
     """
+
     def update_kmeans(self):
         if self.bwkRadioButton.isChecked():
             self.draw_kmeans()
@@ -407,6 +425,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Sets what mode options are available depending on the type of co-segmentation selected
     """
+
     def clustering_options(self):
         if self.clusteringBox.currentIndex() == 0:
             self.kmeansFrame.setHidden(True)
@@ -418,6 +437,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Create scatter plot corresponding to a downscaled version of the feature vector using MDS
     """
+
     def create_plot(self):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
@@ -439,13 +459,16 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     When clicking on a scatterplot point it will highlight as well as the corresponding superpixel in the superpixel
     image
     """
+
     def on_click_plot(self, _, points):
         on_click_plot(self.plotMarked, self.view, self.mdsData, self.image_path, self.superImage, self.algs,
                       self.foreground, self.background, _, points)
+
     """
     Checks if enough superpixels are marked then calculates the gaussian mixture model for graph cut as well as
     the uncertainty for nodes and edge
     """
+
     def set_gmm(self):
         self.set_markings()
         totalForeground = 0
@@ -468,10 +491,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             errormessage("Not enough superpixels marked",
                          "Both foreground and background need more superpixels marked than the maximum components")
 
-
     """
     Unfinished code for exporting and importing XML for settings. To be worked on in future work
     """
+
     def write_xml_settings(self):
         root = ET.Element("root")
         settings = ET.SubElement("settings")
@@ -483,6 +506,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     When changing features will disable  the unused and enable the used parameters for the feature vector
     """
+
     def change_features(self):
         change_features(self.colorLabel1, self.colorLabel2, self.colorLabel3, self.colorLabel4, self.HHist, self.SHist,
                         self.HSHHist, self.HSSHist, self.siftlabel, self.siftKeyPoint, self.entropyLabel_1,
@@ -494,13 +518,16 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     When changing features will disable  the unused and enable the used modes for co-segmentation display
     """
+
     def change_cosegmentation(self):
-        change_cosegmentation(self.graphCutModeLabel, self.graphCutModeFrame, self.clusterModeLabel, self.clusterModeFrame,
+        change_cosegmentation(self.graphCutModeLabel, self.graphCutModeFrame, self.clusterModeLabel,
+                              self.clusterModeFrame,
                               self.clusteringBox.currentText())
 
     """
     Enable all available buttons for the current step of co-segmentation
     """
+
     def enable_buttons(self, option):
         enable_buttons(self.superpixelButton, self.clearMarkingsButton, self.histogramButton, self.drawRadioButton,
                        self.histogramRadioButton, self.graph_button, self.GMMButton, self.kmeansButton,
@@ -510,6 +537,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     Simply disables all buttons. To be used in combination with enabble_buttons though not used in all scenarios
     """
+
     def disable_buttons(self):
         disable_buttons(self.superpixelButton, self.histogramButton, self.histogramRadioButton, self.drawRadioButton,
                         self.graph_button, self.GMMButton, self.graphcutButton, self.kmeansButton,
@@ -519,6 +547,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     draws uncertainties on image in uncertainty tab
     """
+
     def draw_uncertainties(self):
         draw_uncertainties(self.image_path, self.uncertainty_image, self.edgeRadioButton.isChecked(), self.algs,
                            self.nodeRadioButton.isChecked(), self.graphRadioButton.isChecked())
@@ -526,8 +555,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
     draws kmeans on image in results tab
     """
+
     def draw_kmeans(self):
-        draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.ColorRadioButton.isChecked(), self.k1, self.k2,
+        draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.ColorRadioButton.isChecked(),
+                    self.k1, self.k2,
                     self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                     self.k13, self.k14, self.k15, self.k16)
 

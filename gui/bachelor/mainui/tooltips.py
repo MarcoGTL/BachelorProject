@@ -1,3 +1,8 @@
+"""
+Sets all tooltips for further explanation
+"""
+
+
 def set_tooltips(superpixelCalculationLabel, superpixelQuantityLabel, iterationsLabel, compactnessLabel, sigmaLabel,
                  featureExtractionLabel, RGB, HSV, Hue, Saturation, HueSat, Sift, Hog, currentLabel, colorLabel1,
                  colorLabel2, colorLabel3, colorLabel4, entropyLabel_1, entropyLabel_2, siftlabel, windowHogLabel,

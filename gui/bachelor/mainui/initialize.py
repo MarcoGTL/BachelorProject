@@ -5,6 +5,8 @@ from tooltips import set_tooltips
 """
 Connects all buttons and sets tooltip
 """
+
+
 def initialize(treeView, context_menu, listWidget, choose_image, clearMarkingsButton, clear_markings, histogramButton,
                set_histograms, superpixelButton, calculate_superpixels, graphcutButton, compute_graph_cut, kmeansButton,
                kmeans, graph_button, create_graph, GMMButton, set_gmm, bwRadioButton, draw_graph_cut, bRadioButton,

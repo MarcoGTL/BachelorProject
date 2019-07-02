@@ -3,7 +3,9 @@ from PyQt5 import QtWidgets
 """
 Creates an error message when something goes wrong
 """
-def errormessage(text,informativetext):
+
+
+def errormessage(text, informativetext):
     msg = QtWidgets.QMessageBox()
     msg.setIcon(QtWidgets.QMessageBox.Critical)
     msg.setText(text)

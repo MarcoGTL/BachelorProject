@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 
 class Pipeline:
     """
+    Author: Niek
+
     A class containing a collection of all the functions that are used in the cosegmentation pipeline.
 
     The attributes of this class consist mostly of dictionaries with the image paths as keys. The outcomes of each step
@@ -500,9 +502,9 @@ class Pipeline:
 
 if __name__ == '__main__':
 
-    # folder_path = '../icoseg_images/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
-    # folder_path = '../icoseg_images/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
-    folder_path = '../icoseg_images/025 Airshows-helicopter/'
+    # folder_path = '../../../icoseg_images/018 Agra Taj Mahal-Inde du Nord 2004-Mhln/'
+    # folder_path = '../../../icoseg_images/043 Christ the Redeemer-Rio de Janeiro-Leonardo Paris/'
+    folder_path = '../../../icoseg_images/025 Airshows-helicopter/'
 
     # Make a list of file paths of the images inside the folder
     images = [folder_path + file for file in listdir(folder_path) if path.isfile(path.join(folder_path, file))]

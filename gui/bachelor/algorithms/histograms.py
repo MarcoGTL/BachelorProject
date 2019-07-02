@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 """
+Author: Niek
+
 A collection of functions to create and plot histograms.
 """
 

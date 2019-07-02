@@ -5,6 +5,8 @@ from scipy.stats import entropy
 
 class FeatureExtraction:
     """
+    Author: Niek
+
     A class containing methods to extract features from an image
 
     Args:

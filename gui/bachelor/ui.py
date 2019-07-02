@@ -89,7 +89,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.background.clear()
         self.groundtruth.clear()
         self.image_paths.clear()
-#        self.algs = pipeline.Pipeline([])
+        self.algs = pipeline.Pipeline([])
         self.clusteringStatus.setText("Not calculated")
         self.extractionStatus.setText("Not calculated")
         self.superpixelStatus.setText("Not calculated")
@@ -101,8 +101,8 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         file_path = self.model.filePath(index)
         dir_path = os.path.dirname(os.path.realpath(__file__))
         common_prefix = os.path.commonprefix([dir_path, file_path])
-    #    self.relpath = os.path.relpath(file_path, common_prefix)
-    #    self.disable_buttons()
+        self.relpath = os.path.relpath(file_path, common_prefix)
+        self.disable_buttons()
 
         for file in os.listdir(file_path):
             if file[-4:] == ".png" or file[-4:] == ".jpg":

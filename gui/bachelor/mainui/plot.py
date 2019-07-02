@@ -23,7 +23,7 @@ def on_click_superpixel(graphMarked, view, algs, image_path, superImage, foregro
         errormessage("No plot", "No plot has been  drawn")
 
 
-def on_click_graph(graphMarked, view, mdsData, image_path, superImage, algs, foreground, background, _, points):
+def on_click_plot(graphMarked, view, mdsData, image_path, superImage, algs, foreground, background, _, points):
     clear_plot_marked(graphMarked, view)
     for point in points:
         graphMarked.append(np.where([point.pos()[0], point.pos()[1]] == mdsData)[0][0])

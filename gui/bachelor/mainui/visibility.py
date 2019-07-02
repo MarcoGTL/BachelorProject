@@ -58,7 +58,7 @@ def change_features(colorLabel1, colorLabel2, colorLabel3, colorLabel4, HHist, S
         hogBins.setVisible(True)
 
 
-def change_clustering(graphCutModeLabel, graphCutModeFrame, clusterModeLabel, clusterModeFrame,current_index):
+def change_cosegmentation(graphCutModeLabel, graphCutModeFrame, clusterModeLabel, clusterModeFrame, current_index):
     if current_index == "Graph cut":
         graphCutModeLabel.setVisible(True)
         graphCutModeFrame.setVisible(True)

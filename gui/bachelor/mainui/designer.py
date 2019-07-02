@@ -8,7 +8,23 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+"""
+Author: Marco
 
+A class made from QT Designer. The whole layout is instantiated in this class. For more information open designer.ui
+inside Qt Designer.
+
+Required Packages:
+    PyQt5
+
+    important Attributes:
+        centralwidget                                  # The main window
+        pipeLineFrame                                  # Contains the pipeline and all its parameters
+        fileFrame                                      # Contains the file system
+        view                                           # Displays all tabs which contain images/results
+        imageListFrame                                 # Contains a list view for the set of images selected
+        settingFrame                                   # Contains all settings for changing display        
+"""
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")

@@ -2,7 +2,10 @@ import os
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-
+"""
+allows seleccting a folder to display its set of images using right click
+if selecting an image will set the ground truth image for the current selected image
+"""
 def context_menu(model, treeView, select_folder, listWidget, select_gt):
     if model.isDir(treeView.currentIndex()):
         menu = QtWidgets.QMenu()
@@ -17,7 +20,9 @@ def context_menu(model, treeView, select_folder, listWidget, select_gt):
         cursor = QtGui.QCursor()
         menu.exec_(cursor.pos())
 
-
+"""
+fills the file system with everything inside the image folder
+"""
 def populate(currentFolder, model, treeView):
     path = os.getcwd() + '/' + currentFolder
     model.setRootPath(QtCore.QDir.rootPath())

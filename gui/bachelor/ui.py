@@ -13,17 +13,19 @@ import pyqtgraph as pg
 from error import errormessage
 import xml.etree.ElementTree as ET
 
-from plot import on_click_superpixel, on_click_graph
-from visibility import change_features, change_clustering, enable_buttons, disable_buttons
+from plot import on_click_superpixel, on_click_plot
+from visibility import change_features, change_cosegmentation, enable_buttons, disable_buttons
 
 """
 Author: Marco
 
-A class instantiating the layout from QT Designer and adding functionality to everything.
+A class instantiating the layout from QT Designer and adding functionality to everything. Contains some functions that
+require a lot of the UI variables. Other functions are available in the mainui folder
 
 Required Packages:
     pyqtgraph
     PyQt5
+    xml (usually pre-installed)
     
     Attributes:
         mdsData = List                                 # Downscaled version of feature vector
@@ -48,15 +50,15 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         # connects everything to it's appropriate function and adds tooltips
         initialize(self.treeView, self.context_menu, self.listWidget, self.choose_image, self.clearMarkingsButton,
-                   self.clear_markings, self.histogramButton, self.set_histograms, self.superpixelButton,
+                   self.clear_markings, self.histogramButton, self.set_feature_vector, self.superpixelButton,
                    self.calculate_superpixels, self.graphcutButton, self.compute_graph_cut, self.kmeansButton,
-                   self.kmeans, self.graph_button, self.create_graph, self.GMMButton, self.set_gmm, self.bwRadioButton,
+                   self.kmeans, self.graph_button, self.create_plot, self.GMMButton, self.set_gmm, self.bwRadioButton,
                    draw_graph_cut, self.bRadioButton, self.colorRadioButton, self.draw_kmeans, self.bwkRadioButton,
                    self.edgeRadioButton, self.draw_uncertainties, self.graphRadioButton, self.nodeRadioButton,
                    self.gt_originalRadioButton, self.draw_gt, self.gt_overlapRadioButton, self.k1, self.update_kmeans,
                    self.k2, self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                    self.k13, self.k14, self.k15, self.k16, self.featureSelected, self.change_features,
-                   self.clusteringBox, self.change_clustering, self.clustering_options, self.kmeansFrame,
+                   self.clusteringBox, self.change_cosegmentation, self.clustering_options, self.kmeansFrame,
                    self.fgRadioButton, self.currentPencil, self.bgRadioButton, self.superpixelCalculationLabel,
                    self.superpixelQuantityLabel, self.iterationsLabel, self.compactnessLabel, self.sigmaLabel,
                    self.featureExtractionLabel, self.RGB, self.HSV, self.Hue, self.Saturation, self.HueSat, self.Sift,
@@ -83,15 +85,22 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.model = QtWidgets.QFileSystemModel()           #
         self.result = "None"
         self.relpath = ""
-        self.change_clustering()
+        self.change_cosegmentation()
         self.change_features()
         populate("images", self.model, self.treeView)
 
-"""
-"""
+
+    """
+    Generates context menu folder when  right clicking a folder in the file system view
+    """
     def context_menu(self):
         context_menu(self.model, self.treeView, self.select_folder, self.listWidget, self.select_gt)
 
+    """
+    Selects a ground truth for the current image by right clicking a image.
+    Checks if there are co-segmentation results to enable overlap between result and ground truth
+    draws ground truth in the ground truth tab
+    """
     def select_gt(self):
         index = self.treeView.currentIndex()
         self.file_path = self.model.filePath(index)
@@ -101,13 +110,19 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.draw_gt()
         self.gt_originalRadioButton.setEnabled(True)
 
+    """
+    draws ground truth differently depending on which co-segmentation has been used
+    """
     def draw_gt(self):
         draw_gt(self.file_path, self.image, self.groundtruth, self.image_path, self.gt_originalRadioButton,
                 self.compare_image, self.algs, self.result, self.k1, self.k2, self.k3, self.k4, self.k5, self.k6,
                 self.k7, self.k8, self.k9, self.k10, self.k11, self.k12, self.k13, self.k14, self.k15, self.k16,
                 self.gtpercentage)
-        self.select_folder()
 
+    """
+    Clears all settings from the previous folder if it exists and resets the progress box
+    Finds all images in folder and adds them to image_paths
+    """
     def select_folder(self):
         self.listWidget.clear()
         self.image.clear()
@@ -144,6 +159,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         if len(self.image_paths) != 0:
             self.algs = pipeline.Pipeline(self.image_paths)
 
+    """
+    Selects an image from image_paths, draws images that already have been calculated and draws markings
+     that have already been drawn.  Sets marking/selection ability for the superpixel tab and the draw tab
+    """
     def choose_image(self):
         if self.listWidget.currentItem() is not None:
             self.image_path = self.relpath + '/' + self.listWidget.currentItem().text()
@@ -168,8 +187,8 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
             if self.image_path in self.algs.images_cosegmented:
                 if self.result == "graphcut":
-                    draw_graph_cut(self.result, self.image_path, self.bwRadioButton, self.result_image, self.algs,
-                                   self.bRadioButton)
+                    draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image, self.algs,
+                                   self.bRadioButton.isChecked())
                 elif self.result == "kmeans":
                     self.draw_kmeans()
             if self.image_path in self.groundtruth:
@@ -182,6 +201,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         else:
             self.disable_buttons()
 
+    """
+    Stores the point on the graph that has been marked in foreground or background. Sets last point marked
+    If MDS is selected hightlights the superpixel and corresponding point instead.
+    """
     def move_start(self, event):
         x = event.pos().x()
         y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
@@ -195,6 +218,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.point = (x, y)
             draw_markings(self.image_path, self.image, self.background, self.foreground, self.algs, self.superImage)
 
+    """
+    Stores ooint and checks if the point has been marked previously and removes that entry
+    """
     def save_point(self, x, y):
         if (x, y) in self.foreground[self.image_path]:
             self.foreground[self.image_path].remove((x, y))
@@ -206,6 +232,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         elif self.pencil == 2:
             self.foreground[self.image_path].append((x, y))
 
+    """
+    connects last marked point with the current mouse position using midpoint line algorithm. MLA iterates vertically
+    instead of horizontally if it is larger in length compared to width. Saves all points between and including.
+    """
     def move_connect(self, event):
         if self.drawRadioButton.isChecked():
             x = event.pos().x()
@@ -231,9 +261,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.point = (x, y)
             draw_markings(self.image_path, self.image, self.background, self.foreground, self.algs, self.superImage)
 
-    def release_move(self, event):
-        self.point = (-1, -1)
-
+    """
+    Midpoint line algorithm that iterates horizontally
+    """
     def save_linex(self, x1, x2, y1, y2):
         slope = (y1 - y2) / (x1 - x2)
         i = x1 + 1
@@ -241,6 +271,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.save_point(i, round(y1 + slope * (i - x1)))
             i = i + 1
 
+    """
+    Midpoint line algorithm that iterates vertically
+    """
     def save_liney(self, x1, x2, y1, y2):
         slope = (x1 - x2) / (y1 - y2)
         i = y1 + 1
@@ -248,14 +281,26 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.save_point(round(x1 + slope * (i - y1)), i)
             i = i + 1
 
+    """
+    Sets last point back to default when the mouse is released
+    """
+    def release_move(self, event):
+        self.point = (-1, -1)
+
+
+    """
+    Sets if the pen is marking foreground(2) or background(1)
+    """
     def currentPencil(self):
         if self.fgRadioButton.isChecked():
             self.pencil = 2
         elif self.bgRadioButton.isChecked():
             self.pencil = 1
-        elif self.eRadioButton.isChecked():
-            self.pencil = 0
 
+    """
+    Calculates superpixels as well as neighbors and centers. Then draws the superpixels in the superpixel tab by their
+    bounds
+    """
     def calculate_superpixels(self):
         self.algs.compute_superpixels(self.superpixelSpinBox.value(), self.compactnessSpinBox.value(),
                                       self.iterationsSpinBox.value(), self.sigmaSpinBox.value())
@@ -274,7 +319,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                 self.clusteringStatus.setText("Recalculation needed")
                 self.clusteringStatus.setStyleSheet("color: red")
 
-    def set_histograms(self):
+    """
+    Calculates the feature vector
+    """
+    def set_feature_vector(self):
         self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(),
                                           h_hist=self.Hue.isChecked(), h_hist_bins=self.HHist.value(),
                                           h_hist_entropy=self.HentropyCheckBox.isChecked(),
@@ -296,6 +344,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.clusteringStatus.setText("Need recalculation")
             self.clusteringStatus.setStyleSheet("color: red")
 
+    """
+    Checks all points marked which superpixel they represent and add to the corresponding foreground/background list
+    """
     def set_markings(self):
         foreground = []
         background = []
@@ -308,6 +359,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.algs.set_fg_segments(self.image_path, foreground)
         self.algs.set_bg_segments(self.image_path, background)
 
+    """
+    Clears all markings and updates display
+    """
     def clear_markings(self):
         self.foreground[self.image_path].clear()
         self.background[self.image_path].clear()
@@ -317,11 +371,14 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.superImage.update()
         self.result_image.update()
 
+    """
+    Compute the graph cut and draw the results.
+    """
     def compute_graph_cut(self):
         self.algs.perform_graph_cut()
         self.result = "graphcut"
-        draw_graph_cut(self.result, self.image_path, self.bwRadioButton, self.result_image, self.algs,
-                       self.bRadioButton)
+        draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image, self.algs,
+                       self.bRadioButton.isChecked())
         self.disable_buttons()
         self.enable_buttons(5)
         if self.gt_originalRadioButton.isEnabled():
@@ -329,6 +386,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.clusteringStatus.setText("Calculated")
         self.clusteringStatus.setStyleSheet("color: lime")
 
+    """
+    Compute the kmeans and draw the results.
+    """
     def kmeans(self):
         self.algs.perform_k_means_clustering(num_clusters=self.kclustervalue.value())
         self.result = "kmeans"
@@ -337,12 +397,16 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         if self.gt_originalRadioButton.isEnabled():
             self.gt_overlapRadioButton.setEnabled(True)
 
+    """
+    Update the kmeans display when a different mode is selected
+    """
     def update_kmeans(self):
         if self.bwkRadioButton.isChecked():
-            draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.colorRadioButton, self.k1,
-                        self.k2, self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11,
-                        self.k12, self.k13, self.k14, self.k15, self.k16)
+            self.draw_kmeans()
 
+    """
+    Sets what mode options are available depending on the type of co-segmentation selected
+    """
     def clustering_options(self):
         if self.clusteringBox.currentIndex() == 0:
             self.kmeansFrame.setHidden(True)
@@ -351,7 +415,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             self.kmeansFrame.setVisible(True)
             self.graphFrame.setHidden(True)
 
-    def create_graph(self):
+    """
+    Create scatter plot corresponding to a downscaled version of the feature vector using MDS
+    """
+    def create_plot(self):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         self.mdsData = MDS.mds_transform(self.algs.images_superpixels_feature_vector[self.image_path])
@@ -365,13 +432,20 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         scatter = pg.ScatterPlotItem(pen=pg.mkPen(width=1, color='r'), symbol='o', size=7)
         pos = [{'pos': x} for x in self.mdsData]
         scatter.setData(pos)
-        scatter.sigClicked.connect(self.on_click_graph)
+        scatter.sigClicked.connect(self.on_click_plot)
         self.view.addItem(scatter)
 
-    def on_click_graph(self, _, points):
-        on_click_graph(self.plotMarked, self.view, self.mdsData, self.image_path, self.superImage, self.algs,
-                       self.foreground, self.background, _, points)
-
+    """
+    When clicking on a scatterplot point it will highlight as well as the corresponding superpixel in the superpixel
+    image
+    """
+    def on_click_plot(self, _, points):
+        on_click_plot(self.plotMarked, self.view, self.mdsData, self.image_path, self.superImage, self.algs,
+                      self.foreground, self.background, _, points)
+    """
+    Checks if enough superpixels are marked then calculates the gaussian mixture model for graph cut as well as
+    the uncertainty for nodes and edge
+    """
     def set_gmm(self):
         self.set_markings()
         totalForeground = 0
@@ -394,6 +468,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             errormessage("Not enough superpixels marked",
                          "Both foreground and background need more superpixels marked than the maximum components")
 
+
+    """
+    Unfinished code for exporting and importing XML for settings. To be worked on in future work
+    """
     def write_xml_settings(self):
         root = ET.Element("root")
         settings = ET.SubElement("settings")
@@ -402,6 +480,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         tree = ET.ElementTree(root)
         tree.write(settings.xml)
 
+    """
+    When changing features will disable  the unused and enable the used parameters for the feature vector
+    """
     def change_features(self):
         change_features(self.colorLabel1, self.colorLabel2, self.colorLabel3, self.colorLabel4, self.HHist, self.SHist,
                         self.HSHHist, self.HSSHist, self.siftlabel, self.siftKeyPoint, self.entropyLabel_1,
@@ -410,28 +491,43 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                         self.cellHogLabel, self.cellSize, self.binsHogLabel, self.hogBins,
                         self.featureSelected.currentText())
 
-    def change_clustering(self):
-        change_clustering(self.graphCutModeLabel, self.graphCutModeFrame, self.clusterModeLabel, self.clusterModeFrame,
-                          self.clusteringBox.currentText())
+    """
+    When changing features will disable  the unused and enable the used modes for co-segmentation display
+    """
+    def change_cosegmentation(self):
+        change_cosegmentation(self.graphCutModeLabel, self.graphCutModeFrame, self.clusterModeLabel, self.clusterModeFrame,
+                              self.clusteringBox.currentText())
 
+    """
+    Enable all available buttons for the current step of co-segmentation
+    """
     def enable_buttons(self, option):
         enable_buttons(self.superpixelButton, self.clearMarkingsButton, self.histogramButton, self.drawRadioButton,
                        self.histogramRadioButton, self.graph_button, self.GMMButton, self.kmeansButton,
                        self.bwkRadioButton, self.colorRadioButton, self.graphcutButton, self.edgeRadioButton,
                        self.nodeRadioButton, self.graphRadioButton, self.bwRadioButton, self.bRadioButton, option)
 
+    """
+    Simply disables all buttons. To be used in combination with enabble_buttons though not used in all scenarios
+    """
     def disable_buttons(self):
         disable_buttons(self.superpixelButton, self.histogramButton, self.histogramRadioButton, self.drawRadioButton,
                         self.graph_button, self.GMMButton, self.graphcutButton, self.kmeansButton,
                         self.clearMarkingsButton, self.edgeRadioButton, self.nodeRadioButton, self.bwRadioButton,
                         self.bRadioButton, self.graphRadioButton)
 
+    """
+    draws uncertainties on image in uncertainty tab
+    """
     def draw_uncertainties(self):
         draw_uncertainties(self.image_path, self.uncertainty_image, self.edgeRadioButton.isChecked(), self.algs,
                            self.nodeRadioButton.isChecked(), self.graphRadioButton.isChecked())
 
+    """
+    draws kmeans on image in results tab
+    """
     def draw_kmeans(self):
-        draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.colorRadioButton, self.k1, self.k2,
+        draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.ColorRadioButton.isChecked(), self.k1, self.k2,
                     self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                     self.k13, self.k14, self.k15, self.k16)
 

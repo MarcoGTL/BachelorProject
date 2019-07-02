@@ -6,6 +6,8 @@ from skimage import io
 import numpy
 
 """
+Author: Niek
+
 A collection of functions for SLIC superpixels, which are currently not used in the pipeline.
 """
 

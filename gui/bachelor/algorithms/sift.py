@@ -1,6 +1,8 @@
 import cv2
 
 """
+Author: Niek
+
 A collection of functions for SIFT keypoints and descriptors, which are currently not used in the pipeline.
 """
 

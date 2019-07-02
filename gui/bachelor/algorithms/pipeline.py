@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 
 class Pipeline:
     """
+    Author: Niek
+
     A class containing a collection of all the functions that are used in the cosegmentation pipeline.
 
     The attributes of this class consist mostly of dictionaries with the image paths as keys. The outcomes of each step

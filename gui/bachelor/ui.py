@@ -28,15 +28,15 @@ Required Packages:
     xml (usually pre-installed)
     
     Attributes:
-        mdsData = List                                 # Downscaled version of feature vector
-        point = (int, int)                             # Last point drawn
+        mdsData: List                                  # Downscaled version of feature vector
+        point: (int, int)                              # Last point drawn
         image_paths = List                             # Image paths of selected folder
         algs: Pipeline                                 # Pipeline of algorithms used for cosegmentation
-        pencil = 2                                     # Current drawing pencil"
-        relative_image_path = ""                       # Path of folder relative to program"
-        foreground: dict                               # Foreground  points"
-        background: dict                               # Background points"
-        groundtruth: dict                              # Ground truth images with normal image path as key"
+        pencil: Int                                    # Current drawing pencil"
+        relative_image_path: String                    # Path of folder relative to program"
+        foreground: Dict                               # Foreground  points"
+        background: Dict                               # Background points"
+        groundtruth: Dict                              # Ground truth images with normal image path as key"
         image_path: String                             # Path of selected image
         plotMarked: List                               # Current set of points selected in mds Plot
         model: QFileSystemModel                        # File system for selecting images 

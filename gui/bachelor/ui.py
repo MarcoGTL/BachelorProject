@@ -53,7 +53,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                    self.clear_markings, self.histogramButton, self.set_feature_vector, self.superpixelButton,
                    self.calculate_superpixels, self.graphcutButton, self.compute_graph_cut, self.kmeansButton,
                    self.kmeans, self.graph_button, self.create_plot, self.GMMButton, self.set_gmm, self.bwRadioButton,
-                   draw_graph_cut, self.bRadioButton, self.colorRadioButton, self.draw_kmeans, self.bwkRadioButton,
+                   self.draw_graph_cut, self.bRadioButton, self.colorRadioButton, self.draw_kmeans, self.bwkRadioButton,
                    self.edgeRadioButton, self.draw_uncertainties, self.graphRadioButton, self.nodeRadioButton,
                    self.gt_originalRadioButton, self.draw_gt, self.gt_overlapRadioButton, self.k1, self.update_kmeans,
                    self.k2, self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
@@ -191,9 +191,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
             if self.image_path in self.algs.images_cosegmented:
                 if self.result == "graphcut":
-                    draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image,
-                                   self.algs,
-                                   self.bRadioButton.isChecked())
+                    self.draw_graph_cut()
                 elif self.result == "kmeans":
                     self.draw_kmeans()
             if self.image_path in self.groundtruth:
@@ -393,8 +391,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def compute_graph_cut(self):
         self.algs.perform_graph_cut()
         self.result = "graphcut"
-        draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image, self.algs,
-                       self.bRadioButton.isChecked())
+        self.draw_graph_cut()
         self.disable_buttons()
         self.enable_buttons(5)
         if self.gt_originalRadioButton.isEnabled():
@@ -562,6 +559,10 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                     self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                     self.k13, self.k14, self.k15, self.k16)
 
+    def draw_graph_cut(self):
+        draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image,
+                                   self.algs,
+                                   self.bRadioButton.isChecked())
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication([])

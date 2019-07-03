@@ -269,10 +269,10 @@ class Pipeline:
 
         Note: Requires compute_gmm.
         """
-        maximum_uncertainty = 0
         for img in self.images:
             # Initialize uncertainties array
             self.images_superpixels_uncertainties_node[img] = [0 for sp in self.images_superpixels[img]]
+            maximum_uncertainty = 0
             # Retrieve the fg and bg likelihoods given the GMM
             fg_likelihoods = self.gmm_foreground.predict_proba(self.images_superpixels_feature_vector[img])
             bg_likelihoods = self.gmm_background.predict_proba(self.images_superpixels_feature_vector[img])
@@ -287,8 +287,7 @@ class Pipeline:
                     maximum_uncertainty = uncertainty
                 self.images_superpixels_uncertainties_node[img][sp] = uncertainty
 
-        if normalize and maximum_uncertainty > 0:
-            for img in self.images:
+            if normalize and maximum_uncertainty > 0:
                 self.images_superpixels_uncertainties_node[img] = [x / maximum_uncertainty for x in
                                                                    self.images_superpixels_uncertainties_node[img]]
 
@@ -314,10 +313,10 @@ class Pipeline:
 
         neighbours = NearestNeighbors(n_neighbors=10, algorithm='auto').fit(feature_vectors)
 
-        maximum_uncertainty = 0
         for img in self.images:
             # Initialize uncertainties array
             self.images_superpixels_uncertainties_edge[img] = [0 for sp in self.images_superpixels[img]]
+            maximum_uncertainty = 0
 
             # Retrieve the indices of the nearest neighbours
             indices = neighbours.kneighbors(self.images_superpixels_feature_vector[img], return_distance=False)
@@ -333,8 +332,7 @@ class Pipeline:
                     maximum_uncertainty = uncertainty
                 self.images_superpixels_uncertainties_edge[img][sp] = uncertainty
 
-        if normalize and maximum_uncertainty > 0:
-            for img in self.images:
+            if normalize and maximum_uncertainty > 0:
                 self.images_superpixels_uncertainties_edge[img] = [x / maximum_uncertainty for x in
                                                                    self.images_superpixels_uncertainties_edge[img]]
 
@@ -353,7 +351,6 @@ class Pipeline:
             scale_parameter (float): Used to adjust the strength of the response in the pairwise term value
                 depending on distance.
         """
-        maximum_uncertainty = 0
         # perform graph-cut for every image
         for img in self.images:
             # Create a graph of N nodes with an estimate of 5 edges per node
@@ -405,6 +402,7 @@ class Pipeline:
 
             # Initialize uncertainties array
             self.images_superpixels_uncertainties_graph_cut[img] = [0 for sp in self.images_superpixels[img]]
+            maximum_uncertainty = 0
 
             # Compute uncertainties of the graph-cut as the difference in energy between the assignments
             for sp in self.images_superpixels[img]:
@@ -416,13 +414,13 @@ class Pipeline:
                     maximum_uncertainty = energy_difference
                 self.images_superpixels_uncertainties_graph_cut[img][sp] = energy_difference
 
+            if normalize_uncertainties and maximum_uncertainty > 0:
+                self.images_superpixels_uncertainties_graph_cut[img] = [x / maximum_uncertainty for x in
+                                                                        self.images_superpixels_uncertainties_graph_cut[
+                                                                            img]]
+
             # Get a bool mask of the pixels for a given selection of superpixel IDs
             self.images_cosegmented[img] = np.where(np.isin(self.images_segmented[img], np.nonzero(graph_cut)), 0, 1)
-
-        if normalize_uncertainties and maximum_uncertainty > 0:
-            for img in self.images:
-                self.images_superpixels_uncertainties_graph_cut[img] = [x / maximum_uncertainty for x in
-                                                                   self.images_superpixels_uncertainties_graph_cut[img]]
 
     def perform_k_means_clustering(self, num_clusters=2):
         """

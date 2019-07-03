@@ -4,6 +4,11 @@ from skimage.segmentation import find_boundaries
 from compare_pixel import compare_pixel
 from error import errormessage
 
+"""
+Draws uncertainties. Checks which option is selected and retrieves it. Then iterates over all pixels and checks
+what color it should be by multiplying the normalized uncertainty vector
+"""
+
 
 def draw_uncertainties(image_path, uncertainty_image, edge, algs, node, graph):
     pixmap = QtGui.QPixmap(image_path)
@@ -42,6 +47,11 @@ def draw_uncertainties(image_path, uncertainty_image, edge, algs, node, graph):
     uncertainty_image.update()
 
 
+"""
+Gets the boundaries and iterates over pixels from image and ddraws them
+"""
+
+
 def draw_bounds(image_path, superImage, algs, foreground, background):
     pixmap = QtGui.QPixmap(image_path)
     superImage.setPixmap(pixmap)
@@ -69,6 +79,16 @@ def draw_bounds(image_path, superImage, algs, foreground, background):
         j = 0
         i = i + 1
     superImage.update()
+
+
+"""
+Draws the ground truth image
+If overlap is selected as a mode then compares the result with the ground truth
+
+For kmeans overlap we check whether the user has checked foreground or background for each kmean cluster and then compare
+it with the ground truth
+For graph cut uses a comparefunction
+"""
 
 
 def draw_gt(file_path, image, groundtruth, image_path, gt_originalRadioButton, compare_image, algs, result, k1, k2, k3,
@@ -118,28 +138,26 @@ def draw_gt(file_path, image, groundtruth, image_path, gt_originalRadioButton, c
                 while x < gt.width():
                     gtpixel = gt.pixelColor(x, y).getRgb()
                     compare = results[y][x]
-                    if (gtpixel[0] != 0):
-                        print(gtpixel[0], gtpixel[1], gtpixel[2])
-                        print(compare)
                     if compare_pixel(gtpixel, compare):
-                        print("im here")
                         qp.drawPoint(x, y)
                     else:
                         wrong = wrong + 1
                     x = x + 1
                 y = y + 1
                 x = 0
-        print(wrong)
         right = ((compare_image.pixmap().width() * compare_image.pixmap().height()) - wrong) / (
                 compare_image.pixmap().width() * compare_image.pixmap().height()) * 100
-        print(right)
         gtpercentage.setText(str(round(right)) + "%")
         compare_image.update()
 
 
+"""
+Colors the corresponding superpixel of the point clicked on MDS plot
+"""
+
+
 def draw_plot_marked(image_path, superImage, algs, foreground, background, graphMarked):
     draw_bounds(image_path, superImage, algs, foreground, background)
-    print(graphMarked)
     qp = QtGui.QPainter(superImage.pixmap())
     qp.setPen(QtGui.QPen(QtGui.QColor(0, 255, 0, 25), 3))
     i = 0
@@ -157,7 +175,13 @@ def draw_plot_marked(image_path, superImage, algs, foreground, background, graph
     superImage.update()
 
 
-def draw_kmeans(result, image_path, result_image, algs, colorRadioButton, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11,
+"""
+Draws kmeans. If color is selected creates a color table else creates a white black table depending on if the user
+selected the cluster as foreground. Then iterates over all pixels
+"""
+
+
+def draw_kmeans(result, image_path, result_image, algs, colorselected, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11,
                 k12, k13, k14, k15, k16):
     if result == "kmeans":
         pixmap = QtGui.QPixmap(image_path)
@@ -169,10 +193,11 @@ def draw_kmeans(result, image_path, result_image, algs, colorRadioButton, k1, k2
         j = 0
         lengthy = len(results)
         lengthx = len(results[0])
-        if colorRadioButton.isChecked():
+        if colorselected:
             color = [[0, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255],
-          [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0], [128, 0, 128],
-          [0, 128, 128], [0, 0, 128]]
+                     [255, 0, 255], [192, 192, 192], [128, 128, 128], [128, 0, 0], [128, 128, 0], [0, 128, 0],
+                     [128, 0, 128],
+                     [0, 128, 128], [0, 0, 128]]
         else:
             color = [(k1.isChecked() * 255, k1.isChecked() * 255, k1.isChecked() * 255),
                      (k2.isChecked() * 255, k2.isChecked() * 255, k2.isChecked() * 255),
@@ -200,6 +225,11 @@ def draw_kmeans(result, image_path, result_image, algs, colorRadioButton, k1, k2
         result_image.update()
 
 
+"""
+Draws all foreground marked pixels red and all background marked pixels blue in both superpixel and draw tab
+"""
+
+
 def draw_markings(image_path, image, background, foreground, algs, superImage):
     pixmap = QtGui.QPixmap(image_path)
     image.setPixmap(pixmap)
@@ -225,17 +255,22 @@ def draw_markings(image_path, image, background, foreground, algs, superImage):
     superImage.update()
 
 
-def draw_graph_cut(result, image_path, bwRadioButton, result_image, algs, bRadioButton):
+"""
+Draws the graph cut where white is foreground and black is background
+If border mode is selected it divides the foreground and background with a border
+"""
+
+
+def draw_graph_cut(result, image_path, bw, result_image, algs, b):
     if result == "graphcut":
         pixmap = QtGui.QPixmap(image_path)
-        if bwRadioButton.isChecked():
-            pixmap.fill(QtCore.Qt.black)
         result_image.setPixmap(pixmap)
         results = algs.images_cosegmented[image_path]
         qp = QtGui.QPainter(result_image.pixmap())
-        if bwRadioButton.isChecked():
+        if bw:
             qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
-        elif bRadioButton.isChecked():
+            result_image.pixmap().fill(QtCore.Qt.black)
+        elif b:
             qp.setPen(QtGui.QPen(QtCore.Qt.yellow, 2))
             results = find_boundaries(results)
         y = 0

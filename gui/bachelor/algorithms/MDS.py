@@ -10,7 +10,7 @@ Required Packages:
     scikit-learn
 
     Attributes:
-        data = []               # In this case the feature vector of our pipeline
+        data: List of lists               # In this case the feature vector of our pipeline
 """
 def mds_transform(data):
     embedding = MDS(n_components=2)

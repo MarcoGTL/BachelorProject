@@ -17,7 +17,6 @@ def draw_uncertainties(image_path, uncertainty_image, edge, algs, node, graph):
         x = algs.images_superpixels_uncertainties_edge[image_path]
     elif node:
         x = algs.images_superpixels_uncertainties_node[image_path]
-        print(x)
     elif graph:
         x = [1 - i for i in algs.images_superpixels_uncertainties_graph_cut[image_path]]
     uncertainty_image.setPixmap(pixmap)
@@ -26,7 +25,6 @@ def draw_uncertainties(image_path, uncertainty_image, edge, algs, node, graph):
     j = 0
     lengthy = pixmap.height()
     lengthx = pixmap.width()
-    print(lengthy, lengthx)
     while i < lengthy:
         while j < lengthx:
             color = round(x[algs.images_segmented[image_path][i][j]] * 1020)

@@ -11,7 +11,6 @@ import os
 import pyqtgraph as pg
 
 from error import errormessage
-import xml.etree.ElementTree as ET
 
 from plot import on_click_superpixel, on_click_plot
 from visibility import change_features, change_cosegmentation, enable_buttons, disable_buttons
@@ -25,7 +24,6 @@ require a lot of the UI variables. Other functions are available in the mainui f
 Required Packages:
     pyqtgraph
     PyQt5
-    xml (usually pre-installed)
     
     Attributes:
         mdsData: List                                  # Downscaled version of feature vector
@@ -59,7 +57,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                    self.k2, self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                    self.k13, self.k14, self.k15, self.k16, self.featureSelected, self.change_features,
                    self.clusteringBox, self.change_cosegmentation, self.clustering_options, self.kmeansFrame,
-                   self.fgRadioButton, self.currentPencil, self.bgRadioButton, self.superpixelCalculationLabel,
+                   self.fgRadioButton, self.current_pencil, self.bgRadioButton, self.superpixelCalculationLabel,
                    self.superpixelQuantityLabel, self.iterationsLabel, self.compactnessLabel, self.sigmaLabel,
                    self.featureExtractionLabel, self.RGB, self.HSV, self.Hue, self.Saturation, self.HueSat, self.Sift,
                    self.Hog, self.currentLabel, self.colorLabel1, self.colorLabel2, self.colorLabel3, self.colorLabel4,
@@ -300,7 +298,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     Sets if the pen is marking foreground(2) or background(1)
     """
 
-    def currentPencil(self):
+    def current_pencil(self):
         if self.fgRadioButton.isChecked():
             self.pencil = 2
         elif self.bgRadioButton.isChecked():
@@ -334,6 +332,18 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
 
     def set_feature_vector(self):
+        if self.Hog.isChecked():
+            if self.blockStride.value() % self.cellSize.value() != 0:
+                errormessage("Hog parameters are wrong", "The block stride should be a multiple of cell size ")
+                return
+            elif (self.winSize.value() - self.blockSize.value()) % self.blockStride.value() != 0:
+                errormessage("Hog parameters are wrong",
+                             "The window size substracted from block size should be a multiple of blockstride ")
+                return
+            elif self.blockSize.value() % self.cellSize.value() != 0:
+                errormessage("Hog parameters are wrong", "The blocksize should be a multiple of cellsize")
+                return
+
         self.algs.compute_feature_vectors(means_bgr=self.RGB.isChecked(), means_hsv=self.HSV.isChecked(),
                                           h_hist=self.Hue.isChecked(), h_hist_bins=self.HHist.value(),
                                           h_hist_entropy=self.HentropyCheckBox.isChecked(),
@@ -490,7 +500,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     """
     Unfinished code for exporting and importing XML for settings. To be worked on in future work
-    """
+    
 
     def write_xml_settings(self):
         root = ET.Element("root")
@@ -499,6 +509,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
         tree = ET.ElementTree(root)
         tree.write(settings.xml)
+    """
 
     """
     When changing features will disable  the unused and enable the used parameters for the feature vector
@@ -561,8 +572,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def draw_graph_cut(self):
         draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image,
-                                   self.algs,
-                                   self.bRadioButton.isChecked())
+                       self.algs,
+                       self.bRadioButton.isChecked())
+
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication([])

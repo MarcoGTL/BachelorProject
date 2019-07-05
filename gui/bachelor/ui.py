@@ -83,6 +83,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.model = QtWidgets.QFileSystemModel()  #
         self.result = "None"
         self.relpath = ""
+        self.views = None
         self.change_cosegmentation()
         self.change_features()
         populate("images", self.model, self.treeView)
@@ -215,7 +216,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             x = event.pos().x()
             y = event.pos().y() - round((self.superImage.height() - self.superImage.pixmap().height()) / 2)
         print(x,y)
-        if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
+        if y < 0 or x < 0 or y >= self.image.pixmap().height() or x >= self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
             on_click_superpixel(self.plotMarked, self.views, self.algs, self.image_path, self.superImage,
@@ -253,7 +254,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
             else:
                 x = event.pos().x()
                 y = event.pos().y() - round((self.superImage.height() - self.superImage.pixmap().height()) / 2)
-            if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
+            if y < 0 or x < 0 or y >= self.image.pixmap().height() or x >= self.image.pixmap().width():
                 return
             if self.point == (-1, -1) or self.point == (x, y):
                 self.point = (x, y)

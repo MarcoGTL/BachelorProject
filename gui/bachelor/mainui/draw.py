@@ -68,7 +68,6 @@ def draw_bounds(image_path, superImage, algs, foreground, background):
     j = 0
     lengthy = len(boundaries)
     lengthx = len(boundaries[0])
-    print(lengthy, lengthx)
     while i < lengthy:
         while j < lengthx:
             if boundaries[i][j]:

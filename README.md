@@ -1,14 +1,14 @@
 # Interactive image co-segmentation
 ## Required packages
-PyQt 5
-pyqtgraph
-opencv-contrib-python (Using version 3.4.2.17, as newer versions do not include SIFT)
-numpy
-PyMaxflow
-scikit-image
-scikit-learn
-scipy
-matplotlib
+* PyQt 5
+* pyqtgraph
+* opencv-contrib-python (Using version 3.4.2.17, as newer versions do not include SIFT)
+* numpy
+* PyMaxflow
+* scikit-image
+* scikit-learn
+* scipy
+* matplotlib
 ## User Guide
 To perform co-segmentation perform the following steps:
 1. Right click on a folder containing images and press select folder

@@ -579,7 +579,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
 
     def draw_kmeans(self):
-        draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.ColorRadioButton.isChecked(),
+        draw_kmeans(self.result, self.image_path, self.result_image, self.algs, self.colorRadioButton.isChecked(),
                     self.k1, self.k2,
                     self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                     self.k13, self.k14, self.k15, self.k16)

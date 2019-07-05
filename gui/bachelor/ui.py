@@ -439,6 +439,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def update_kmeans(self):
         if self.bwkRadioButton.isChecked():
             self.draw_kmeans()
+        else:
+            if self.gt_overlapRadioButton.isChecked() and self.compare_image.size() == self.result_image.size():
+                self.draw_gt()
 
     """
     Sets what mode options are available depending on the type of co-segmentation selected
@@ -583,11 +586,17 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                     self.k1, self.k2,
                     self.k3, self.k4, self.k5, self.k6, self.k7, self.k8, self.k9, self.k10, self.k11, self.k12,
                     self.k13, self.k14, self.k15, self.k16)
+        if self.gt_overlapRadioButton.isChecked() and self.compare_image.size() == self.result_image.size():
+            self.draw_gt()
+            print("hello")
 
     def draw_graph_cut(self):
         draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image,
                        self.algs,
                        self.bRadioButton.isChecked())
+        if self.gt_overlapRadioButton.isChecked() and self.compare_image.size() == self.result_image.size():
+            self.draw_gt()
+            print("hello")
 
 
 if __name__ == '__main__':

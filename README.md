@@ -2,9 +2,10 @@
 A Python program that can be used to interactively perform co-segmentation through a graphical user interface. This program is part of a collaborative Bachelor's project between Marco Lu & Niek de Vries. More information about the program can be found in the Bachelor's theses "Interactive image co-segmentation" and "User-driven image co-segmentation" by Marco and Niek respectively.
 
 ## Required packages
+This section lists the packages that are required to run the program. This could be done using `pip install`.
 * PyQt 5
 * pyqtgraph
-* opencv-contrib-python (Using version 3.4.2.17, as newer versions do not include SIFT)
+* opencv-contrib-python (Using version 3.4.2.17, as newer versions do not include SIFT. Use `pip install opencv-contrib-python==3.4.2.17`)
 * numpy
 * PyMaxflow
 * scikit-image

@@ -5,7 +5,9 @@ A Python program that can be used to interactively perform co-segmentation throu
 This section lists the packages that are required to run the program. This could be done using `pip install`.
 * PyQt 5
 * pyqtgraph
-* opencv-contrib-python (Using version 3.4.2.17, as newer versions do not include SIFT. Use `pip install opencv-contrib-python==3.4.2.17`)
+* opencv-contrib-python 
+   * (Version 3.4.2.17 required, as newer versions do not include SIFT)
+   * (Use `pip install opencv-contrib-python==3.4.2.17` to install)
 * numpy
 * PyMaxflow
 * scikit-image

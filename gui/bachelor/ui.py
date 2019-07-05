@@ -381,14 +381,16 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     def set_markings(self):
         foreground = []
         background = []
-        for x in self.foreground[self.image_path]:
-            if self.algs.images_segmented[self.image_path][x[1]][x[0]] not in foreground:
-                foreground.append(self.algs.images_segmented[self.image_path][x[1]][x[0]])
-        for y in self.background[self.image_path]:
-            if self.algs.images_segmented[self.image_path][y[1]][y[0]] not in background:
-                background.append(self.algs.images_segmented[self.image_path][y[1]][y[0]])
-        self.algs.set_fg_segments(self.image_path, foreground)
-        self.algs.set_bg_segments(self.image_path, background)
+        for image_path in self.image_paths:
+            if image_path in self.foreground:
+                for x in self.foreground[image_path]:
+                    if self.algs.images_segmented[image_path][x[1]][x[0]] not in foreground:
+                        foreground.append(self.algs.images_segmented[image_path][x[1]][x[0]])
+                for y in self.background[image_path]:
+                    if self.algs.images_segmented[image_path][y[1]][y[0]] not in background:
+                        background.append(self.algs.images_segmented[image_path][y[1]][y[0]])
+                self.algs.set_fg_segments(image_path, foreground)
+                self.algs.set_bg_segments(image_path, background)
 
     """
     Clears all markings and updates display
@@ -489,6 +491,9 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         self.set_markings()
         totalForeground = 0
         totalBackground = 0
+        print(self.algs.images_superpixels_foreground.values())
+        print(self.algs.images_superpixels_background.values())
+
         for i in self.algs.images_superpixels_foreground.values():
             totalForeground = totalForeground + len(i)
         for j in self.algs.images_superpixels_background.values():

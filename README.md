@@ -15,7 +15,7 @@ To perform co-segmentation perform the following steps:
 1. Click on an image from the set of images
 1. Calculate superpixels
 1. Calculate features
-  1. View the mds plot
+   1. View the mds plot
 1. Choose a co-segmentation algorithm
 1. Perform the co-segmentation
 1. View results in the result tab.

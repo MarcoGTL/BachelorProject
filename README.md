@@ -1,5 +1,5 @@
 # Interactive image co-segmentation
-A Python program that can be used to interactively perform co-segmentation through a graphical user interface. This program is part of a collaborative Bachelor's Project between Marco Lu & Niek de Vries. More information about the program can be found in the Bachelor's Theses "Interactive image co-segmentation" and "User-driven image co-segmentation" by Marco and Niek respectively.
+A Python program that can be used to interactively perform co-segmentation through a graphical user interface. This program is part of a collaborative Bachelor's project between Marco Lu & Niek de Vries. More information about the program can be found in the Bachelor's theses "Interactive image co-segmentation" and "User-driven image co-segmentation" by Marco and Niek respectively.
 
 ## Required packages
 * PyQt 5

@@ -215,7 +215,6 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         else:
             x = event.pos().x()
             y = event.pos().y() - round((self.superImage.height() - self.superImage.pixmap().height()) / 2)
-        print(x,y)
         if y < 0 or x < 0 or y >= self.image.pixmap().height() or x >= self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
@@ -492,17 +491,15 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def set_gmm(self):
         self.set_markings()
-        totalForeground = 0
-        totalBackground = 0
-        print(self.algs.images_superpixels_foreground.values())
-        print(self.algs.images_superpixels_background.values())
+        total_foreground = 0
+        total_background = 0
 
         for i in self.algs.images_superpixels_foreground.values():
-            totalForeground = totalForeground + len(i)
+            total_foreground = total_foreground + len(i)
         for j in self.algs.images_superpixels_background.values():
-            totalBackground = totalBackground + len(j)
+            total_background = total_background + len(j)
 
-        if totalForeground >= self.componentMax.value() and totalBackground >= self.componentMax.value():
+        if total_foreground >= self.componentMax.value() and total_background >= self.componentMax.value():
             self.algs.compute_gmm(components_range=range(self.componentMin.value(), self.componentMax.value()),
                                   n_init=self.n_init.value())
             self.algs.compute_edge_uncertainties()
@@ -588,7 +585,6 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                     self.k13, self.k14, self.k15, self.k16)
         if self.gt_overlapRadioButton.isChecked() and self.compare_image.size() == self.result_image.size():
             self.draw_gt()
-            print("hello")
 
     def draw_graph_cut(self):
         draw_graph_cut(self.result, self.image_path, self.bwRadioButton.isChecked(), self.result_image,
@@ -596,7 +592,6 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
                        self.bRadioButton.isChecked())
         if self.gt_overlapRadioButton.isChecked() and self.compare_image.size() == self.result_image.size():
             self.draw_gt()
-            print("hello")
 
 
 if __name__ == '__main__':

@@ -208,12 +208,17 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
 
     def move_start(self, event):
-        x = event.pos().x()
-        y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
+        if self.view.currentIndex() == 0:
+            x = event.pos().x()
+            y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
+        else:
+            x = event.pos().x()
+            y = event.pos().y() - round((self.superImage.height() - self.superImage.pixmap().height()) / 2)
+        print(x,y)
         if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
             return
         if self.histogramRadioButton.isChecked():
-            on_click_superpixel(self.plotMarked, self.view, self.algs, self.image_path, self.superImage,
+            on_click_superpixel(self.plotMarked, self.views, self.algs, self.image_path, self.superImage,
                                 self.foreground, self.background, x, y)
         else:
             self.save_point(x, y)
@@ -242,9 +247,12 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def move_connect(self, event):
         if self.drawRadioButton.isChecked():
-            x = event.pos().x()
-            y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
-
+            if self.view.currentIndex() == 0:
+                x = event.pos().x()
+                y = event.pos().y() - round((self.image.height() - self.image.pixmap().height()) / 2)
+            else:
+                x = event.pos().x()
+                y = event.pos().y() - round((self.superImage.height() - self.superImage.pixmap().height()) / 2)
             if y < 0 or x < 0 or y > self.image.pixmap().height() or x > self.image.pixmap().width():
                 return
             if self.point == (-1, -1) or self.point == (x, y):
@@ -450,17 +458,17 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
         pg.setConfigOption('foreground', 'k')
         self.mdsData = MDS.mds_transform(self.algs.images_superpixels_feature_vector[self.image_path])
 
-        self.view = pg.PlotWidget()
-        self.view.resize(800, 600)
-        self.view.setWindowTitle('MDS graph')
-        self.view.setAspectLocked(True)
-        self.view.show()
+        self.views = pg.PlotWidget()
+        self.views.resize(800, 600)
+        self.views.setWindowTitle('MDS graph')
+        self.views.setAspectLocked(True)
+        self.views.show()
 
         scatter = pg.ScatterPlotItem(pen=pg.mkPen(width=1, color='r'), symbol='o', size=7)
         pos = [{'pos': x} for x in self.mdsData]
         scatter.setData(pos)
         scatter.sigClicked.connect(self.on_click_plot)
-        self.view.addItem(scatter)
+        self.views.addItem(scatter)
 
     """
     When clicking on a scatterplot point it will highlight as well as the corresponding superpixel in the superpixel
@@ -468,7 +476,7 @@ class mainUI(designer.Ui_MainWindow, QtWidgets.QMainWindow):
     """
 
     def on_click_plot(self, _, points):
-        on_click_plot(self.plotMarked, self.view, self.mdsData, self.image_path, self.superImage, self.algs,
+        on_click_plot(self.plotMarked, self.views, self.mdsData, self.image_path, self.superImage, self.algs,
                       self.foreground, self.background, _, points)
 
     """

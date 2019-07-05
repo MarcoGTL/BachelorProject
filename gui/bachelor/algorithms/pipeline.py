@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from featureextraction import FeatureExtraction
+from algorithms.featureextraction import FeatureExtraction
 import algorithms.histograms
 from os import listdir, path
 import maxflow

@@ -1,8 +1,8 @@
 from PyQt5 import QtGui, QtCore
 from skimage.segmentation import find_boundaries
 
-from compare_pixel import compare_pixel
-from error import errormessage
+from mainui.compare_pixel import compare_pixel
+from mainui.error import errormessage
 
 """
 Draws uncertainties. Checks which option is selected and retrieves it. Then iterates over all pixels and checks

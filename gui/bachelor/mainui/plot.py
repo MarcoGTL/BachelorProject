@@ -1,5 +1,5 @@
-from draw import draw_plot_marked
-from error import errormessage
+from mainui.draw import draw_plot_marked
+from mainui.error import errormessage
 import numpy as np
 import pyqtgraph as pg
 

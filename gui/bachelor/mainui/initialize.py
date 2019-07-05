@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
 
-from tooltips import set_tooltips
+from mainui.tooltips import set_tooltips
 
 """
 Connects all buttons and sets tooltip

@@ -1,19 +1,19 @@
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 
-from draw import draw_uncertainties, draw_bounds, draw_gt, draw_kmeans, draw_markings, draw_graph_cut
-from fileSystem import context_menu, populate
-from initialize import initialize
+from mainui.draw import draw_uncertainties, draw_bounds, draw_gt, draw_kmeans, draw_markings, draw_graph_cut
+from mainui.fileSystem import context_menu, populate
+from mainui.initialize import initialize
 from mainui import designer
 from algorithms import pipeline
 from algorithms import MDS
 import os
 import pyqtgraph as pg
 
-from error import errormessage
+from mainui.error import errormessage
 
-from plot import on_click_superpixel, on_click_plot
-from visibility import change_features, change_cosegmentation, enable_buttons, disable_buttons
+from mainui.plot import on_click_superpixel, on_click_plot
+from mainui.visibility import change_features, change_cosegmentation, enable_buttons, disable_buttons
 
 """
 Author: Marco
